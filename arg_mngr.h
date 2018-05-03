@@ -9,7 +9,7 @@
 #define MAGENTA "\x1b[35m"
 #define RESET   "\x1b[0m"
 
-int chk_nmbr(char *str){//controlla se una striga contiene sono cifre
+int chk_nmbr(char *str){//controlla se una striga contiene solo cifre
     for(int j=0;j<strlen(str);j++){
         if(!(str[j] >= 48 && str[j] <= 57)){
             return 0;//0=>false
