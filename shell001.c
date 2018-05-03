@@ -24,12 +24,6 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
     char *opt,*content;//per gli argomenti composti opt conterra' l'opzione e content il contenuto dell'opzione
     opt = (char *)malloc(9 * sizeof(char));
     content =(char *)malloc(50 * sizeof(char));
-    if(*err_path==NULL){
-        printf("err_path is NULL\n");
-    }
-    if(*code==-1){
-        printf("code is not set yet\n");
-    }
     /*--> prima di tutto controllo se si tratta di un help */
     if(argc == 2 && (strcmp(argv[1],"-h") == 0 || strcmp(argv[1],"--help") == 0) ){
         printf("print help here\n");
