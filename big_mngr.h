@@ -1,4 +1,5 @@
-int chk_nmbr(char *str){//controlla se una striga contiene sono cifre
+int chk_nmbr(char *str){
+    // - controlla se una striga rappresenta un numero
     for(int j=0;j<strlen(str);j++){
         if(!(str[j] >= 48 && str[j] <= 57)){
             return 0;//0=>false
@@ -7,7 +8,8 @@ int chk_nmbr(char *str){//controlla se una striga contiene sono cifre
     return 1;//1=>true
 }
 
-int chk_ascii(char *str){//controlla se la stringa contiene solo caratteri ASCII standard
+int chk_ascii(char *str){
+    // - controlla se la stringa contiene solo caratteri ASCII standard
     for(int j=0;j<strlen(str);j++){
         if(!(str[j] >= 0 && str[j] <= 127)){
             printf(RED "found suspicious character\n");
@@ -18,6 +20,7 @@ int chk_ascii(char *str){//controlla se la stringa contiene solo caratteri ASCII
 }
 
 void print_help(){
+    // - stampa una mini guida
     printf(RESET "HOW TO USE START THE PROGRAM : \n");
     printf("\t to set the output file : --outfile=\"<path>\" or -o <path>\n");
     printf("\t to set the error file  : --errfile=\"<path>\" or -e <path>\n");
@@ -26,36 +29,48 @@ void print_help(){
     printf(RESET "----------------------------------------\n");
 }
 
-void tok_manager(char *input_buffer,char *(*arr)[10], char *(*cmd)[10], int *a, int *b){
-    int x=0, y=0;
-    char *tok;//conterra' i token
+void tok_manager(char *input_buffer,char *(*arr)[10], char *(*cmd)[10], int *a, int *b){//arr e' l'array che conterra' gli argomenti mentre cmd i comandi effettivi, il pipe e' considerato un comando
+    // - controlla che gli argomenti(singole stringhe suddivise da spazi) passati alla custom shell siano coerenti e li organizza in comandi e pipe, un futuro puo' essere usato per organizzare in altri modi
+    int x=0, y=0, p_previous=0;//x e' il contatore di argomenti, y e' il contatore di comandi effettivi e pipe, p_previous e' un flag che controlla che non ci siano pipe consecutivi senza comandi in mezzo
+    char *tok;//conterra' gli argomenti
     tok = strtok(input_buffer, " ");//tok conterra' in questo primo caso tutto cio' che c'e' prima del primo spazio
-    (*cmd)[y] = malloc(100*sizeof(char));
-    strcpy((*cmd)[y], "");
-    while(tok != NULL){
-        (*arr)[x] = malloc(50 *sizeof(char));//alloco memoria necessaria per salvare il comando
-        strcpy((*arr)[x],tok);
-        if(strcmp((*arr)[x],"|")!=0){
-            if(strcmp((*cmd)[y],"")!=0){
+    (*cmd)[y] = malloc(100*sizeof(char));//alloco dello spazio nell'array di stringhe che conterra' i comandi
+    strcpy((*cmd)[y], "");//metto un carattere vuoto a cui appendera' gli argomenti che fanno parte del comando
+    while(tok != NULL){//finche' trovo token
+        (*arr)[x] = malloc(50 *sizeof(char));//alloco memoria necessaria per salvare un argomento
+        strcpy((*arr)[x],tok);//ci metto dentro il token trovato
+        if(chk_ascii((*arr)[x])==0){//se non e' ascii standard me ne esco
+            print_help();
+            exit(1);
+        }
+        if(strcmp((*arr)[x],"|")!=0){//se non si tratta di un pipe lo appendo all'attuale comando
+            if(strcmp((*cmd)[y],"")!=0){//se il comando non era vuoto aggiungo prima uno spazio
                 strcat((*cmd)[y], " ");
                 strcat((*cmd)[y], (*arr)[x]);
-            }else{
+            }else{//altrimenti ci butto semplicmente l'argomento dentro
                 strcat((*cmd)[y], (*arr)[x]);
             }
-        }else{
-            y++;
+            p_previous=0;
+        }else{//se si tratta di un pipe
+            if(p_previous==1){//controllo che non ce ne sia stato uno subito prima
+                printf(RED "incoherent pipe\n");
+                print_help();
+                exit(1);
+            }
+            y++;//aggiorno il contatore dei comandi trovati e ci salvo dentro il pipe
             (*cmd)[y] = malloc(100*sizeof(char));
             strcpy((*cmd)[y],(*arr)[x]);
-            y++;
+            y++;//mi preparo per il successivo comando
             (*cmd)[y] = malloc(100*sizeof(char));
             strcpy((*cmd)[y],"");
+            p_previous=1;
         }
-        x++;
+        x++;//aggiorno il numero di argomenti totali
         tok = strtok(NULL, " ");//continuo con la restante stringa fino al prossimo pipe o fino alla fine
     }
-    *a = x;
-    *b = y+1;
-    if(strcmp((*arr)[0],"|")==0 || strcmp((*arr)[x-1],"|")==0){
+    *a = x;//in a passo il numero di argomenti
+    *b = y+1;//in b passo l'indice dell'ultimo comando piu' uno, per avere in numero totale di comandi
+    if(strcmp((*arr)[0],"|")==0 || strcmp((*arr)[x-1],"|")==0){//controlla che il primo o l'ultimo comando non sia un pipe 
         printf(RED "incoherent pipe\n");
         print_help();
         exit(1);    
@@ -63,6 +78,7 @@ void tok_manager(char *input_buffer,char *(*arr)[10], char *(*cmd)[10], int *a, 
 }
 
 void args_manager(int argc, char *argv[], char **out_path, char **err_path, int *max_len, int *code){
+    // - controlla e sistema gli argomenti passati al main
     char *opt,*content;//per gli argomenti composti opt conterra' l'opzione e content il contenuto dell'opzione
     opt = (char *)malloc(9 * sizeof(char));
     content =(char *)malloc(50 * sizeof(char));
@@ -209,11 +225,11 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
     /*--> controllo se c'e' qualche opzione non ancora inizializzata(sarebbe possibile fare anche un inserimento interrattivo) */
     if(*out_path==NULL){
         printf(YELLOW "\nsetting default outputfile path\n");
-        *out_path="/tmp/shell001output.txt";
+        *out_path="/dev/null";
     }
     if(*err_path==NULL){
         printf(YELLOW "\nsetting default errorfile path\n");
-        *err_path="/tmp/shell001error.txt";
+        *err_path="/dev/null";
     }
     if(*code==-1){
         printf(YELLOW "\nsetting default code flag\n");
