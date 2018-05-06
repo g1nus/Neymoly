@@ -20,7 +20,7 @@ int chk_ascii(char *str){
 }
 
 void print_help(){
-    // - stampa una mini guida
+    // - stampa una piccola guida
     printf(RESET "HOW TO USE START THE PROGRAM : \n");
     printf("\t to set the output file : --outfile=\"<path>\" or -o <path>\n");
     printf("\t to set the error file  : --errfile=\"<path>\" or -e <path>\n");
