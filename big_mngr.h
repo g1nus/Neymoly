@@ -12,7 +12,7 @@ int chk_ascii(char *str){
     // - controlla se la stringa contiene solo caratteri ASCII standard
     for(int j=0;j<strlen(str);j++){
         if(!(str[j] >= 0 && str[j] <= 127)){
-            printf(RED "found suspicious character\n");
+            fprintf(stderr, RED "found not standard ASCII character\n");
             return 0;//0=>false
         }
     }
@@ -53,7 +53,7 @@ void tok_manager(char *input_buffer,char *(*arr)[10], char *(*cmd)[10], int *a, 
             p_previous=0;
         }else{//se si tratta di un pipe
             if(p_previous==1){//controllo che non ce ne sia stato uno subito prima
-                printf(RED "incoherent pipe\n");
+                fprintf(stderr, RED "incoherent pipe\n");
                 print_help();
                 exit(1);
             }
@@ -71,7 +71,7 @@ void tok_manager(char *input_buffer,char *(*arr)[10], char *(*cmd)[10], int *a, 
     *a = x;//in a passo il numero di argomenti
     *b = y+1;//in b passo l'indice dell'ultimo comando piu' uno, per avere in numero totale di comandi
     if(strcmp((*arr)[0],"|")==0 || strcmp((*arr)[x-1],"|")==0){//controlla che il primo o l'ultimo comando non sia un pipe 
-        printf(RED "incoherent pipe\n");
+        fprintf(stderr, RED "incoherent pipe\n");
         print_help();
         exit(1);    
     }    
@@ -84,7 +84,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
     content =(char *)malloc(50 * sizeof(char));
     /*--> controllo se ho un numero ragionevole di argomenti */
     if(argc<1 || argc>9){
-        printf(RED "incoherent number of arguments\n");
+        fprintf(stderr, RED "incoherent number of arguments\n");
         print_help();
         exit(1);
     }
@@ -108,7 +108,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                 strcpy(*out_path, argv[i+1]);//lo salvo
                 i++;//skippo il prossimo arg che tanto era il contenuto
             }else{
-                printf(RED "error while reading args\n");
+                fprintf(stderr, RED "error while reading output option\n");
                 print_help();
                 exit(1);
             }
@@ -120,7 +120,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                 strcpy(*err_path, argv[i+1]);
                 i++;
             }else{
-                printf(RED "error while reading args\n");
+                fprintf(stderr, RED "error while reading error option\n");
                 print_help();
                 exit(1);
             }
@@ -130,13 +130,13 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
             if((i+1<argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && strcmp(argv[i+1],"-1") != 0 && chk_nmbr(argv[i+1])==1 && *max_len==-1 && chk_ascii(argv[i+1]) == 1){
                 *max_len = atoi(argv[i+1]);
                 if(*max_len < 0){
-                    printf(RED "error while reading args\n");
+                    fprintf(stderr, RED "error while reading maxlen option: value should be greater than 0\n");
                     print_help();
                     exit(1);
                 }
                 i++;
             }else{
-                printf(RED "error while reading args\n");
+                fprintf(stderr, RED "error while reading maxlen option\n");
                 print_help();
                 exit(1);
             }
@@ -151,7 +151,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                 }
                 i++;
             }else{
-                printf(RED "error while reading args\n");
+                fprintf(stderr, RED "error while reading code option\n");
                 print_help();
                 exit(1);
             }
@@ -165,12 +165,12 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                 *out_path = (char *)malloc(strlen(content)+1 * sizeof(char));
                 strcpy(*out_path, content);
             }else{
-                printf(RED "error while reading args\n");
+                fprintf(stderr, RED "error while reading output option\n");
                 print_help();
                 exit(1);
             }
         }
-        else if(strstr(argv[i],"errfile=") != NULL){
+        else if(strstr(argv[i],"--errfile=") != NULL){
             printf(GREEN "found error file option ");
             sprintf(content, "%s", argv[i]+10);//sarebbe anche possibile usare strncpy se proprio si vuole
             printf("content is : %s \n", content);
@@ -178,29 +178,29 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                 *err_path = (char *)malloc(strlen(content)+1 * sizeof(char));
                 strcpy(*err_path, content);
             }else{
-                printf(RED "error while reading args\n");
+                fprintf(stderr, RED "error while reading error option\n");
                 print_help();
                 exit(1);
             }
         }
-        else if(strstr(argv[i],"maxlen=") != NULL){
+        else if(strstr(argv[i],"--maxlen=") != NULL){
             printf(GREEN "found maxlen option,");
             sprintf(content, "%s", argv[i]+9);
             printf("content is : %s \n", content);
             if(chk_nmbr(content)==1 || *max_len==-1){
                 *max_len = atoi(content);
                 if(*max_len < 0){
-                    printf(RED "error while reading args\n");
+                    fprintf(stderr, RED "error while reading maxlen option: value should be greater than 0\n");
                     print_help();
                     exit(1);
                 }
             }else{
-                printf(RED "error while reading args\n");
+                fprintf(stderr, RED "error while reading maxlen option\n");
                 print_help();
                 exit(1);
             }
         }
-        else if(strstr(argv[i],"code=") != NULL){
+        else if(strstr(argv[i],"--code=") != NULL){
             printf(GREEN "found code option, ");
             sprintf(content, "%s", argv[i]+7);
             printf("content is : %s \n", content);
@@ -211,13 +211,13 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                     *code = 0;
                 }
             }else{
-                printf(RED "error while reading args\n");
+                fprintf(stderr, RED "error while reading code option\n");
                 print_help();
                 exit(1);
             }
         }
         else{//se non ho trovato un'opzione valida devo gestire un errore
-            printf(RED "found wrong argument\n");
+            fprintf(stderr, RED "found wrong argument\n");
             print_help();
             exit(1);
         }
