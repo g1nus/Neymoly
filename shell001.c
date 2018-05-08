@@ -89,8 +89,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
         }
         close(tmp_out);//chiudo il file da cui ho fatto la lettura
         printf("%s", cmd_strout);//stampo il contenuto della stringa su schermo
-        remove(out_path);//rimuove i file di log se gia' presente, altrimenti sovrascrive su dati gia' presenti
-        fd=open(out_path, O_WRONLY | O_CREAT, 0777);//apro il file in cui devo salvare il log di output
+        fd=open(out_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare il log di output
         if(fd<0){
             printf("<solo_run:info> there was an error accessing the file\n");
         }
@@ -160,25 +159,23 @@ void duo_pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_le
     child_pid=fork();
     if(child_pid>0){//padre
         printf("PADRE:esecuzione del comando\n");
-        int standard_out;
-        standard_out = dup(1);
         close(fd_pipe[READ]);
-        dup2(fd_pipe[WRITE],1);
+        /*dup2(fd_pipe[WRITE],1);
         system(cmd[0]);
-        close(fd_pipe[WRITE]);
-        dup2(standard_out,1);
+        dup2(standard_out,1);*/
+        solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, fd_pipe[WRITE], standard_err);
         printf("PADRE:fine esecuzione comando\n");
-        sleep(3);
+        close(fd_pipe[WRITE]);
+        sleep(3);//da cambiare per Massimo
         kill(child_pid,SIGKILL);
     }else{
         printf("FIGLIO:attesa di comando\n");
-        int standard_in;
-        standard_in = dup(0);
         close(fd_pipe[WRITE]);
-        dup2(fd_pipe[READ],0);
+        /*dup2(fd_pipe[READ],0);
         system(cmd[2]);
+        dup2(standard_inp,0);*/
+        solo_run(cmd[2], out_path, err_path, max_len, code, fd_pipe[READ], standard_out, standard_err);
         close(fd_pipe[READ]);
-        dup2(standard_in,0);
         printf("FIGLIO:fine escuzione comando\n");
     }
 }
@@ -192,6 +189,8 @@ int main(int argc, char *argv[]){
     printf(RESET "\nRECEIVED PARAMETERS----------------------------------------\n");
     printf(BLUE "out : %s - err : %s - max : %i - code : %i", out_path, err_path, max_len, code);//stampo i parametri ottenuti dall'args_manager
     printf(RESET "\n-----------------------------------------------------------\n");
+    remove(out_path);//rimuove i file di log se gia' presente, altrimenti sovrascrive su dati gia' presenti
+    remove(err_path);
     /*--> variabili necessarie per il buffer di input */
     char *input_buffer;//buffer effettivo
     size_t buff_size = 100;//numero di caratteri che il buffer puo' contenere
