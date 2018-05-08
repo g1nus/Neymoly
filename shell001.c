@@ -26,8 +26,8 @@ void setstd(){
     standard_inp = dup(0);//mi salvo lo stdin(tastiera)
     standard_out = dup(1);//mi salvo lo stdout(video)
     standard_err = dup(2);//mi salvo lo stderr(video)
- 
-}   
+
+}
 
 void solo_run(char *command, char *out_path, char *err_path, int max_len, int code, int input, int output, int error){//contiene input, output e error
     int fd;//uno per il file di log di output  e uno per il file di log di errori
@@ -45,7 +45,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     tmp_out=open("/tmp/tmpout.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente lo stdout del programma
     tmp_err=open("/tmp/tmperr.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente lo stderr del programma
     tmp_date=open("/tmp/tmpdate.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente la data del programma
-    
+
     //* --> eseguo la data su un file temporaneo per poi salvarmele */
     dup2(tmp_date,1);//fa in modo che lo stdout punti al file che conterra' la data di esecuzione
     system("date");//eseguo il comando che mi da la data
@@ -57,10 +57,9 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     r=WEXITSTATUS(system(command));//esegue il comando e salva in r la variabile di stato $?
     dup2(output,1);//rimette lo stdout dove necessario
     dup2(error,2);//rimette lo stderr dove necessario
-    
+
     //* --> converto il valore di ritorno in una stringa */
     sprintf(cmd_strr, "%d", r);
-    
     //* --> mi salvo la data in una stringa */
     wbytes = lseek(tmp_date, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di data
     lseek (tmp_date, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
@@ -74,7 +73,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     }
     close(tmp_date);
     strtok(cmd_strdate, "\n");//tolgo il newline dalla data, non mi serve
-    
+
     //* --> gestisco il risulato dello stdout del comando */
     wbytes = lseek(tmp_out, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di stdout
     lseek (tmp_out, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
@@ -88,6 +87,11 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             printf("<solo_run:error> there was an error reading the out file\n");
         }
         close(tmp_out);//chiudo il file da cui ho fatto la lettura
+        //* -> fix per l'ultimo carattere */
+        if(strlen(cmd_strout)!=wbytes){
+            //printf(RED "suspicious character found at end of string, gonna fix\n" RESET);
+            cmd_strout[wbytes] = 00;
+        }
         printf("%s", cmd_strout);//stampo il contenuto della stringa su schermo
         fd=open(out_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare il log di output
         if(fd<0){
@@ -119,6 +123,11 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             printf("<solo_run:error> there was an error reading the err file\n");
         }
         close(tmp_err);
+        //* -> fix per l'ultimo carattere */
+        if(strlen(cmd_strerr)!=wbytes){
+            //printf(RED "suspicious character found at end of string, gonna fix\n" RESET);
+            cmd_strerr[wbytes] = 00;
+        }
         printf("%s", cmd_strerr);//stampo il contenuto della string
         fd=open(err_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare l'output in append
         if(fd<0){
@@ -139,7 +148,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     dup2(standard_inp,0);
     dup2(standard_out,1);
     dup2(standard_err,2);
-    printf(BLUE "\nreturn value is : %i ", r);
+    printf(YELLOW "\nreturn value is : %i ", r);
     printf(RESET "\n");
 }
 
@@ -147,9 +156,6 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
 void duo_pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, int code){
     printf("<duo_pipedrun:info> getting into a basic piping\n");
     printf("<duo_pipedrun:info> first command to run is: %s\n", cmd[0]);
-    int tmp_out;//conterra' temporaneamente l'output del programma(file)
-    size_t wbytes;//conterra' il numero di byte scritti dal programma
-    char *cmd_strout;//conterra' le stringhe restituite dal programma
 
     remove("/tmp/tmpout.cmd");//rimuove l'output del precedente comando se presente
 
@@ -158,25 +164,28 @@ void duo_pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_le
     pipe(fd_pipe);
     child_pid=fork();
     if(child_pid>0){//padre
-        printf("PADRE:esecuzione del comando\n");
+        printf(MAGENTA "PADRE:esecuzione del comando\n");
         close(fd_pipe[READ]);
         /*dup2(fd_pipe[WRITE],1);
         system(cmd[0]);
         dup2(standard_out,1);*/
+        printf(MAGENTA "PADRE:invocazione di solo_run\n");
         solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, fd_pipe[WRITE], standard_err);
-        printf("PADRE:fine esecuzione comando\n");
+        printf("PADRE:fine esecuzione comando\n" RESET);
         close(fd_pipe[WRITE]);
-        sleep(3);//da cambiare per Massimo
+        sleep(6);//da cambiare per Massimo
         kill(child_pid,SIGKILL);
     }else{
-        printf("FIGLIO:attesa di comando\n");
+        sleep(3);
+        printf(MAGENTA "FIGLIO:attesa di comando\n");
         close(fd_pipe[WRITE]);
         /*dup2(fd_pipe[READ],0);
         system(cmd[2]);
         dup2(standard_inp,0);*/
+        printf(MAGENTA "PADRE:invocazione di solo_run\n");
         solo_run(cmd[2], out_path, err_path, max_len, code, fd_pipe[READ], standard_out, standard_err);
         close(fd_pipe[READ]);
-        printf("FIGLIO:fine escuzione comando\n");
+        printf("\nFIGLIO:fine escuzione comando\n" RESET);
     }
 }
 
@@ -225,7 +234,7 @@ int main(int argc, char *argv[]){
             if(y==1){
                 printf(BLUE "<main:info> found only one command, going to run it\n\n" RESET);
                 solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err);
-            } 
+            }
             if(y==3 && strcmp(cmd[1],"|")==0){
                 duo_pipedrun(cmd, y, out_path, err_path, max_len, code);
             }
