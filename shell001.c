@@ -18,10 +18,19 @@
 
 #include "big_mngr.h"//includo le procedure necessarie per il controllo e la gestione degli argomenti iniziali e delle stringhe passate come comandi
 
-void solo_run(char *command, char *out_path, char *err_path, int max_len, int code){
+int standard_inp;
+int standard_out;
+int standard_err;
+
+void setstd(){
+    standard_inp = dup(0);//mi salvo lo stdin(tastiera)
+    standard_out = dup(1);//mi salvo lo stdout(video)
+    standard_err = dup(2);//mi salvo lo stderr(video)
+ 
+}   
+
+void solo_run(char *command, char *out_path, char *err_path, int max_len, int code, int input, int output, int error){//contiene input, output e error
     int fd;//uno per il file di log di output  e uno per il file di log di errori
-    int standard_out;//conterra' temporaneamente lo stdout(video)
-    int standard_err;//conterra' temporaneamente lo stderr(video)
     int tmp_out;//conterra' temporaneamente l'output del programma(file)
     int tmp_err;//conterra' temporaneamente lo stderr del programma(file)
     int tmp_date;//conterra' temporaneamente la data di esecuzione del programma(file)
@@ -29,35 +38,30 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     size_t wbytes;//conterra' il numero di byte scritti dal programma
     char *cmd_strout, *cmd_strerr, *cmd_strdate, cmd_strr[10];//conterra' le stringhe restituite dal programma
 
-    //* --> stampo l'esecuzione dei comandi sul file temporaneo */
-    standard_out = dup(1);//mi salvo lo stdout(video)
-    standard_err = dup(2);//mi salvo lo stderr(video)
+    //* --> preparo i file per l'esecuzione dei comandi sul file temporaneo */
     remove("/tmp/tmpout.cmd");//rimuove l'output del precedente comando se presente
     remove("/tmp/tmperr.cmd");//rimuove l'output del precedente comando se presente
     remove("/tmp/tmpdate.cmd");//rimuove la date del precedente comando se presente
-    printf(BLUE "<solo_run:info> command to run is :  %s \n", command);
-    printf(RESET "\n");
-    tmp_out=open("/tmp/tmpout.cmd", O_WRONLY | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente lo stdout del programma
-    tmp_err=open("/tmp/tmperr.cmd", O_WRONLY | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente lo stderr del programma
-    tmp_date=open("/tmp/tmpdate.cmd", O_WRONLY | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente la data del programma
+    tmp_out=open("/tmp/tmpout.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente lo stdout del programma
+    tmp_err=open("/tmp/tmperr.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente lo stderr del programma
+    tmp_date=open("/tmp/tmpdate.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente la data del programma
+    
+    //* --> eseguo la data su un file temporaneo per poi salvarmele */
     dup2(tmp_date,1);//fa in modo che lo stdout punti al file che conterra' la data di esecuzione
     system("date");//eseguo il comando che mi da la data
+
+    //* --> eseguo il comando passato sui file temporanei e poi rimetto stout e stderr a quelli necessari */
+    dup2(input, 0);//fa in modo che l'input derivi da tastiera o dal pipe passato
     dup2(tmp_out,1);//fa in modo che stdout punti al file temporaneo
     dup2(tmp_err,2);//fa in modo che stderr punti al file temporaneo
     r=WEXITSTATUS(system(command));//esegue il comando e salva in r la variabile di stato $?
-    dup2(standard_out,1);//rimette lo stdout a schermo
-    dup2(standard_err,2);//rimette lo stderr a schermo
-    close(tmp_out);//chiudo la scrittura del file che contiene lo stdout
-    close(tmp_err);//chiudo la scrittura del file che contiene lo stderr
-    close(tmp_date);//chiudo la scrittura del file che contiene la data
-    close(standard_out);//chiudo l'fd che mi ha salvato temporaneamente l'indice del video
-    close(standard_err);//chiudo l'fd che mi ha salvato temporaneamente l'indice del video
+    dup2(output,1);//rimette lo stdout dove necessario
+    dup2(error,2);//rimette lo stderr dove necessario
     
     //* --> converto il valore di ritorno in una stringa */
     sprintf(cmd_strr, "%d", r);
     
     //* --> mi salvo la data in una stringa */
-    tmp_date=open("/tmp/tmpdate.cmd", O_RDONLY);//apro il file che contiene la data in lettura
     wbytes = lseek(tmp_date, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di data
     lseek (tmp_date, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
     cmd_strdate=(char *)malloc(wbytes * sizeof(char));//alloco lo spazio di memoria necessaria per salvarmi la data in una stringa
@@ -72,10 +76,8 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     strtok(cmd_strdate, "\n");//tolgo il newline dalla data, non mi serve
     
     //* --> gestisco il risulato dello stdout del comando */
-    tmp_out=open("/tmp/tmpout.cmd", O_RDONLY);//apro il file in cui e' stato salvato temporaneamente lo stdout del programma
     wbytes = lseek(tmp_out, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di stdout
     lseek (tmp_out, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
-    printf("<solo_run:info> number of bytes written on the cmd_out is : %i \n", wbytes);
     if(wbytes>0){//se ho letto dei dati vuol dire che il comando ha stampato qualcosa nel suo stdout
         cmd_strout = (char *)malloc(wbytes * sizeof(char));//alloco memoria necesseria per contenere il file che contiene lo stdout
         if(cmd_strout == NULL){//controlla che il buffer sia stato effettivamente creato
@@ -86,7 +88,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             printf("<solo_run:error> there was an error reading the out file\n");
         }
         close(tmp_out);//chiudo il file da cui ho fatto la lettura
-        printf("<solo_run:info> I've read this from tmp_out:\n%s", cmd_strout);//stampo il contenuto della stringa su schermo
+        printf("%s", cmd_strout);//stampo il contenuto della stringa su schermo
         remove(out_path);//rimuove i file di log se gia' presente, altrimenti sovrascrive su dati gia' presenti
         fd=open(out_path, O_WRONLY | O_CREAT, 0777);//apro il file in cui devo salvare il log di output
         if(fd<0){
@@ -106,10 +108,8 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     }
 
     //* --> gestisco il risulato dello stderr del comando(allo stesso modo come ho fatto per il stdout) */
-    tmp_err=open("/tmp/tmperr.cmd", O_RDONLY);//apro il file in cui e' stato salvato temporaneamente lo stderr del programma
     wbytes = lseek(tmp_err, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di stdout
     lseek (tmp_err, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
-    printf("<solo_run:info> number of bytes written on the cmd_err is : %i \n", wbytes);
     if(wbytes>0){
         cmd_strerr = (char *)malloc(wbytes * sizeof(char));//alloco memoria necesseria per contenere il file
         if(cmd_strerr == NULL){//controlla che il buffer sia stato effettivamente creato
@@ -120,10 +120,10 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             printf("<solo_run:error> there was an error reading the err file\n");
         }
         close(tmp_err);
-        printf("<solo_run:info> I've read this from cmd_err:\n%s", cmd_strerr);//stampo il contenuto della string
+        printf("%s", cmd_strerr);//stampo il contenuto della string
         fd=open(err_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare l'output in append
         if(fd<0){
-            printf("<solo_run:info> there was an error accessing the file\n");
+            printf("<solo_run:error> there was an error accessing the file\n");
         }
         write(fd,cmd_strdate,strlen(cmd_strdate));
         write(fd," )-> failed execution\n",23);
@@ -137,8 +137,11 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
         close(fd);
         close(fd);
     }
-    printf("\nreturn value is : %i ", r);
-    printf("\n");
+    dup2(standard_inp,0);
+    dup2(standard_out,1);
+    dup2(standard_err,2);
+    printf(BLUE "\nreturn value is : %i ", r);
+    printf(RESET "\n");
 }
 
 
@@ -181,6 +184,7 @@ void duo_pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_le
 }
 
 int main(int argc, char *argv[]){
+    setstd();//setta i file descriptor standard
     char *err_path, *out_path; int max_len=-1, code=-1; err_path=NULL; out_path=NULL;//conterranno i contenuti delle opzioni che verranno usati
     /*--> controllo che gli argomenti passati all'eseguibile siano corretti */
     printf(RESET "----------------------------------------\n\n");
@@ -220,8 +224,8 @@ int main(int argc, char *argv[]){
         printf("\n");
         if(strcmp(cmd[0],"quit")!=0){//se i comandi inseriti non sono un quit provo a eseguirli
             if(y==1){
-                printf("<main:info> found only one command, going to run it\n");
-                solo_run(cmd[0], out_path, err_path, max_len, code);
+                printf(BLUE "<main:info> found only one command, going to run it\n\n" RESET);
+                solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err);
             } 
             if(y==3 && strcmp(cmd[1],"|")==0){
                 duo_pipedrun(cmd, y, out_path, err_path, max_len, code);
