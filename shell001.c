@@ -4,6 +4,7 @@
 #include<stdlib.h>
 #include<fcntl.h>
 #include<sys/types.h>
+#include <sys/wait.h>
 #include<sys/stat.h>
 #include <signal.h>
 
@@ -152,40 +153,79 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     printf(RESET "\n");
 }
 
-
-void duo_pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, int code){
-    printf("<duo_pipedrun:info> getting into a basic piping\n");
-    printf("<duo_pipedrun:info> first command to run is: %s\n", cmd[0]);
-
-    remove("/tmp/tmpout.cmd");//rimuove l'output del precedente comando se presente
+void duo_pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, int code, int *tmppipe){
 
     int child_pid;
     int fd_pipe[2];
     pipe(fd_pipe);
     child_pid=fork();
     if(child_pid>0){//padre
-        printf(MAGENTA "PADRE:esecuzione del comando\n");
-        close(fd_pipe[READ]);
-        /*dup2(fd_pipe[WRITE],1);
-        system(cmd[0]);
-        dup2(standard_out,1);*/
-        printf(MAGENTA "PADRE:invocazione di solo_run\n");
-        solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, fd_pipe[WRITE], standard_err);
-        printf("PADRE:fine esecuzione comando\n" RESET);
-        close(fd_pipe[WRITE]);
-        sleep(6);//da cambiare per Massimo
-        kill(child_pid,SIGKILL);
-    }else{
-        sleep(3);
-        printf(MAGENTA "FIGLIO:attesa di comando\n");
+        //padre che fa l'ultima funzione quando il resto è finito
+        printf("PADRE\n");
         close(fd_pipe[WRITE]);
         /*dup2(fd_pipe[READ],0);
         system(cmd[2]);
         dup2(standard_inp,0);*/
-        printf(MAGENTA "PADRE:invocazione di solo_run\n");
-        solo_run(cmd[2], out_path, err_path, max_len, code, fd_pipe[READ], standard_out, standard_err);
+        wait(NULL);
+        solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], tmppipe[WRITE], standard_err);
+        printf("PADRE:fine esecuzione comando\n");
         close(fd_pipe[READ]);
-        printf("\nFIGLIO:fine escuzione comando\n" RESET);
+    }else{
+        printf("FIGLIO\n");
+        close(fd_pipe[READ]);
+        /*dup2(fd_pipe[WRITE],1);
+        system(cmd[0]);
+        dup2(standard_out,1);*/
+        if(y==3)
+        {
+            solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, fd_pipe[WRITE], standard_err);
+            close(fd_pipe[WRITE]);
+            printf("FIGLIO:fine escuzione comando\n");
+        }
+        else
+        {
+            duo_pipedrun(cmd, y-2, out_path, err_path, max_len, code, fd_pipe);
+        }
+        exit(1);
+    }
+}
+
+void pipedrunwrapper(char *cmd[], int y, char *out_path, char *err_path, int max_len, int code){
+    printf("<duo_pipedrun:info> getting into a basic piping\n");
+    printf("<duo_pipedrun:info> first command to run is: %s\n", cmd[0]);
+
+    int child_pid;
+    int fd_pipe[2];
+    pipe(fd_pipe);
+    child_pid=fork();
+    if(child_pid>0){//padre
+        //padre che fa l'ultima funzione quando il resto è finito
+        printf("PADRE\n");
+        close(fd_pipe[WRITE]);
+        /*dup2(fd_pipe[READ],0);
+        system(cmd[2]);
+        dup2(standard_inp,0);*/
+        wait(NULL);
+        solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], standard_out, standard_err);
+        printf("PADRE:fine esecuzione comando\n");
+        close(fd_pipe[READ]);
+    }else{
+        printf("FIGLIO\n");
+        close(fd_pipe[READ]);
+        /*dup2(fd_pipe[WRITE],1);
+        system(cmd[0]);
+        dup2(standard_out,1);*/
+        if(y==3)
+        {
+            solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, fd_pipe[WRITE], standard_err);
+            close(fd_pipe[WRITE]);
+            printf("FIGLIO:fine escuzione comando\n");
+        }
+        else
+        {
+            duo_pipedrun(cmd, y-2, out_path, err_path, max_len, code, fd_pipe);
+        }
+        exit(1);
     }
 }
 
@@ -235,8 +275,9 @@ int main(int argc, char *argv[]){
                 printf(BLUE "<main:info> found only one command, going to run it\n\n" RESET);
                 solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err);
             }
-            if(y==3 && strcmp(cmd[1],"|")==0){
-                duo_pipedrun(cmd, y, out_path, err_path, max_len, code);
+            if(strcmp(cmd[1],"|")==0){
+                printf("roboboboob");
+                pipedrunwrapper(cmd, y, out_path, err_path, max_len, code);
             }
         }
     }
