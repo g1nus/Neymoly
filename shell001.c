@@ -154,28 +154,28 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
 }
 
 void pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, int code, int *tmppipe){
-    int child_pid;
-    int fd_pipe[2];
-    pipe(fd_pipe);
-    child_pid=fork();
+    int child_pid;//conterra' il pid del figlio
+    int fd_pipe[2];//conterra' il pipe
+    pipe(fd_pipe);//creo il pipe
+    child_pid=fork();//forko
     if(child_pid>0){//padre
         //padre che fa l'ultima funzione quando il resto è finito
+        close(fd_pipe[WRITE]);//la scrittura non mi serve, devo solo leggere cosa mi hanno dato i figli e al massimo "inoltrare" al padre superiore
+        wait(NULL);//aspetto che i figli finiscano
+        if(tmppipe==NULL){//se il pipe temporaneo non e' inizializzato ful dire che sono il padre principale(quello che deve eseguire l'ultimo comando)
+            solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], standard_out, standard_err);//quindi eseguo il comando predendo in input cio' che mi hanno messo i figli nel pipe e stampo a schermo
+        }else{//altrimenti vuol dire che esiste il pipe temporaneo e sono un "sotto-padre" che deve solo inoltrare ai superiori
+            solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], tmppipe[WRITE], standard_err);//quindi leggo dal fd_pipe e mando l'output nel pipe temporaneo
+        }
+        close(fd_pipe[READ]);//quando ho finito chiudo il pipe
+    }else{//figlio
+        close(fd_pipe[READ]);//la lettura non mi serve
+        if(y==3){//se c'e' praticamente solo un pipe vuol dire che sono l'ultimo figlio(quello che deve eseguire il primo comando)
+            solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, fd_pipe[WRITE], standard_err);//eseguo il comando prendendo lo standard input e passandolo nel fd_pipe
+        }else{//altrimenti vuol dire che sono un comando intermedio
+            pipedrun(cmd, y-2, out_path, err_path, max_len, code, fd_pipe);//quindi richiamo la pipedrun passando pero' il pipe
+        }
         close(fd_pipe[WRITE]);
-        wait(NULL);
-        if(tmppipe==NULL){
-            solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], standard_out, standard_err);//eseguo il comando predendo in input cio' che mi hanno messoi figli nel pipe
-        }else{
-            solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], tmppipe[WRITE], standard_err);
-        }
-        close(fd_pipe[READ]);
-    }else{
-        close(fd_pipe[READ]);
-        if(y==3){
-            solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, fd_pipe[WRITE], standard_err);
-            close(fd_pipe[WRITE]);
-        }else{
-            pipedrun(cmd, y-2, out_path, err_path, max_len, code, fd_pipe);
-        }
         exit(0);
     }
 }
