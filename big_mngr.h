@@ -89,137 +89,163 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
         exit(1);
     }
     /*--> controllo se si tratta di un semplice help */
-    if(argc == 2 && (strcmp(argv[1],"-h") == 0 || strcmp(argv[1],"--help") == 0) ){
+    if(argc == 2 && (strcmp(argv[1],"-h") == 0 || strcmp(argv[1],"--help") == 0)){
         print_help();
         exit(0);//esco dopo aver stampato l'aiuto
     }
-    /*--> se non si tratta di un help controllo tutti gli argomenti */
-    for(int i=1; i<argc; i++){
-        /*--> prima di tutto controllo che nell'argv[i] non siano presenti caratteri speciali */
-        if(chk_ascii(argv[i]) == 0){
-            print_help();
-            exit(1);
+    /*--> controllo se si tratta di una richiesta per una modalita' interattiva */
+    if(argc == 2 && (strcmp(argv[1],"-i") == 0 || strcmp(argv[1],"--interactive") == 0)){
+        printf("insert the out_path : ");
+        *out_path =(char *)malloc(50 * sizeof(char));//alloco la memoria necessaria per il buffer
+        scanf("%s", *out_path);
+        printf(GREEN "setting path for the output log file to : %s\n", *out_path);
+        printf(RESET "insert the err_path : ");
+        *err_path =(char *)malloc(50 * sizeof(char));//alloco la memoria necessaria per il buffer
+        scanf("%s", *err_path);
+        printf(GREEN "setting path for the error log file to : %s\n", *err_path);
+        printf(RESET "insert the code(f:false or t: true): ");
+        scanf("%s", opt);
+        if(strcmp(opt,"t")==0){
+            printf(GREEN "setting return code flag to : true\n");
+            *code=1;
+        }else if(strcmp(opt,"f")==0){
+            printf(GREEN "setting return code flag to : false\n");
+            *code=0;
+        }else{
+            fprintf(stderr, YELLOW "incoherent input, setting default value(false)\n");
+            *code=0;
         }
-        /*--> poi controllo le versioni accorciate */
-        if(strcmp(argv[i],"-o") == 0){
-            printf(GREEN "found output file option(-o %s)\n", argv[i+1]);//stampo anche l'argomento successivo perche' dovrebbe essere il contenuto dell'opzione
-            if((i+1<argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && *out_path==NULL && chk_ascii(argv[i+1]) == 1){//se esiste il contenuto dell'opzione e non e' stata ancora inizilizzata
-                *out_path = (char *)malloc(strlen(argv[i+1])+1 * sizeof(char));
-                strcpy(*out_path, argv[i+1]);//lo salvo
-                i++;//skippo il prossimo arg che tanto era il contenuto
-            }else{
-                fprintf(stderr, RED "error while reading output option\n");
+        printf(RESET "insert the max_len: ");
+        scanf("%d", &(*max_len));
+        printf(GREEN "setting max output lenght to : %d\n", *max_len);
+    }else{
+        for(int i=1; i<argc; i++){
+            /*--> prima di tutto controllo che nell'argv[i] non siano presenti caratteri speciali */
+            if(chk_ascii(argv[i]) == 0){
                 print_help();
                 exit(1);
             }
-        }
-        else if(strcmp(argv[i],"-e") == 0){
-            printf(GREEN "found error file option(-e %s)\n", argv[i+1]);
-            if((i+1<argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && *err_path==NULL && chk_ascii(argv[i+1]) == 1){
-                *err_path = (char *)malloc(strlen(argv[i+1])+1 * sizeof(char));
-                strcpy(*err_path, argv[i+1]);
-                i++;
-            }else{
-                fprintf(stderr, RED "error while reading error option\n");
-                print_help();
-                exit(1);
-            }
-        }
-        else if(strcmp(argv[i],"-m") == 0){
-            printf(GREEN "found maxlen option(-m %s)\n", argv[i+1]);
-            if((i+1<argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && strcmp(argv[i+1],"-1") != 0 && chk_nmbr(argv[i+1])==1 && *max_len==-1 && chk_ascii(argv[i+1]) == 1){
-                *max_len = atoi(argv[i+1]);
-                if(*max_len < 0){
-                    fprintf(stderr, RED "error while reading maxlen option: value should be greater than 0\n");
+            /*--> poi controllo le versioni accorciate */
+            if(strcmp(argv[i],"-o") == 0){
+                printf(GREEN "found output file option(-o %s)\n", argv[i+1]);//stampo anche l'argomento successivo perche' dovrebbe essere il contenuto dell'opzione
+                if((i+1<argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && *out_path==NULL && chk_ascii(argv[i+1]) == 1){//se esiste il contenuto dell'opzione e non e' stata ancora inizilizzata
+                    *out_path = (char *)malloc(strlen(argv[i+1])+1 * sizeof(char));
+                    strcpy(*out_path, argv[i+1]);//lo salvo
+                    i++;//skippo il prossimo arg che tanto era il contenuto
+                }else{
+                    fprintf(stderr, RED "error while reading output option\n");
                     print_help();
                     exit(1);
                 }
-                i++;
-            }else{
-                fprintf(stderr, RED "error while reading maxlen option\n");
-                print_help();
-                exit(1);
             }
-        }
-        else if(strcmp(argv[i],"-c") == 0){
-            printf(GREEN "found code option(-c %s)\n", argv[i+1]);
-            if((i+1<argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && (strcmp(argv[i+1],"true") == 0 || strcmp(argv[i+1],"false") == 0) && *code==-1 && chk_ascii(argv[i+1]) == 1){
-                if(strcmp(argv[i+1],"true") == 0){
-                    *code = 1;
+            else if(strcmp(argv[i],"-e") == 0){
+                printf(GREEN "found error file option(-e %s)\n", argv[i+1]);
+                if((i+1<argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && *err_path==NULL && chk_ascii(argv[i+1]) == 1){
+                    *err_path = (char *)malloc(strlen(argv[i+1])+1 * sizeof(char));
+                    strcpy(*err_path, argv[i+1]);
+                    i++;
                 }else{
-                    *code = 0;
-                }
-                i++;
-            }else{
-                fprintf(stderr, RED "error while reading code option\n");
-                print_help();
-                exit(1);
-            }
-        }
-        /*--> infine per controllare gli argomenti composti gestisco delle substringhe */
-        else if(strstr(argv[i], "--outfile=") != NULL){//se la stringa inizia con '--outfile='
-            printf(GREEN "found output file option, ");
-            sprintf(content, "%s", argv[i]+10);//sprintf mi permette di predere tutti i caratteri fino alla fine(partendo da 10 in questo caso),
-            printf("content is : %s \n", content);
-            if(*out_path==NULL){
-                *out_path = (char *)malloc(strlen(content)+1 * sizeof(char));
-                strcpy(*out_path, content);
-            }else{
-                fprintf(stderr, RED "error while reading output option\n");
-                print_help();
-                exit(1);
-            }
-        }
-        else if(strstr(argv[i],"--errfile=") != NULL){
-            printf(GREEN "found error file option ");
-            sprintf(content, "%s", argv[i]+10);//sarebbe anche possibile usare strncpy se proprio si vuole
-            printf("content is : %s \n", content);
-            if(*err_path==NULL){
-                *err_path = (char *)malloc(strlen(content)+1 * sizeof(char));
-                strcpy(*err_path, content);
-            }else{
-                fprintf(stderr, RED "error while reading error option\n");
-                print_help();
-                exit(1);
-            }
-        }
-        else if(strstr(argv[i],"--maxlen=") != NULL){
-            printf(GREEN "found maxlen option,");
-            sprintf(content, "%s", argv[i]+9);
-            printf("content is : %s \n", content);
-            if(chk_nmbr(content)==1 || *max_len==-1){
-                *max_len = atoi(content);
-                if(*max_len < 0){
-                    fprintf(stderr, RED "error while reading maxlen option: value should be greater than 0\n");
+                    fprintf(stderr, RED "error while reading error option\n");
                     print_help();
                     exit(1);
                 }
-            }else{
-                fprintf(stderr, RED "error while reading maxlen option\n");
-                print_help();
-                exit(1);
             }
-        }
-        else if(strstr(argv[i],"--code=") != NULL){
-            printf(GREEN "found code option, ");
-            sprintf(content, "%s", argv[i]+7);
-            printf("content is : %s \n", content);
-            if((strcmp(content,"true") == 0 || strcmp(content,"false") == 0) && *code == -1){
-                if(strcmp(content,"true") == 0){
-                    *code = 1;
+            else if(strcmp(argv[i],"-m") == 0){
+                printf(GREEN "found maxlen option(-m %s)\n", argv[i+1]);
+                if((i+1<argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && strcmp(argv[i+1],"-1") != 0 && chk_nmbr(argv[i+1])==1 && *max_len==-1 && chk_ascii(argv[i+1]) == 1){
+                    *max_len = atoi(argv[i+1]);
+                    if(*max_len < 0){
+                        fprintf(stderr, RED "error while reading maxlen option: value should be greater than 0\n");
+                        print_help();
+                        exit(1);
+                    }
+                    i++;
                 }else{
-                    *code = 0;
+                    fprintf(stderr, RED "error while reading maxlen option\n");
+                    print_help();
+                    exit(1);
                 }
-            }else{
-                fprintf(stderr, RED "error while reading code option\n");
+            }
+            else if(strcmp(argv[i],"-c") == 0){
+                printf(GREEN "found code option(-c %s)\n", argv[i+1]);
+                if((i+1<argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && (strcmp(argv[i+1],"true") == 0 || strcmp(argv[i+1],"false") == 0) && *code==-1 && chk_ascii(argv[i+1]) == 1){
+                    if(strcmp(argv[i+1],"true") == 0){
+                        *code = 1;
+                    }else{
+                        *code = 0;
+                    }
+                    i++;
+                }else{
+                    fprintf(stderr, RED "error while reading code option\n");
+                    print_help();
+                    exit(1);
+                }
+            }
+            /*--> infine per controllare gli argomenti composti gestisco delle substringhe */
+            else if(strstr(argv[i], "--outfile=") != NULL){//se la stringa inizia con '--outfile='
+                printf(GREEN "found output file option, ");
+                sprintf(content, "%s", argv[i]+10);//sprintf mi permette di predere tutti i caratteri fino alla fine(partendo da 10 in questo caso),
+                printf("content is : %s \n", content);
+                if(*out_path==NULL){
+                    *out_path = (char *)malloc(strlen(content)+1 * sizeof(char));
+                    strcpy(*out_path, content);
+                }else{
+                    fprintf(stderr, RED "error while reading output option\n");
+                    print_help();
+                    exit(1);
+                }
+            }
+            else if(strstr(argv[i],"--errfile=") != NULL){
+                printf(GREEN "found error file option ");
+                sprintf(content, "%s", argv[i]+10);//sarebbe anche possibile usare strncpy se proprio si vuole
+                printf("content is : %s \n", content);
+                if(*err_path==NULL){
+                    *err_path = (char *)malloc(strlen(content)+1 * sizeof(char));
+                    strcpy(*err_path, content);
+                }else{
+                    fprintf(stderr, RED "error while reading error option\n");
+                    print_help();
+                    exit(1);
+                }
+            }
+            else if(strstr(argv[i],"--maxlen=") != NULL){
+                printf(GREEN "found maxlen option,");
+                sprintf(content, "%s", argv[i]+9);
+                printf("content is : %s \n", content);
+                if(chk_nmbr(content)==1 || *max_len==-1){
+                    *max_len = atoi(content);
+                    if(*max_len < 0){
+                        fprintf(stderr, RED "error while reading maxlen option: value should be greater than 0\n");
+                        print_help();
+                        exit(1);
+                    }
+                }else{
+                    fprintf(stderr, RED "error while reading maxlen option\n");
+                    print_help();
+                    exit(1);
+                }
+            }
+            else if(strstr(argv[i],"--code=") != NULL){
+                printf(GREEN "found code option, ");
+                sprintf(content, "%s", argv[i]+7);
+                printf("content is : %s \n", content);
+                if((strcmp(content,"true") == 0 || strcmp(content,"false") == 0) && *code == -1){
+                    if(strcmp(content,"true") == 0){
+                        *code = 1;
+                    }else{
+                        *code = 0;
+                    }
+                }else{
+                    fprintf(stderr, RED "error while reading code option\n");
+                    print_help();
+                    exit(1);
+                }
+            }
+            else{//se non ho trovato un'opzione valida devo gestire un errore
+                fprintf(stderr, RED "found wrong argument\n");
                 print_help();
                 exit(1);
             }
-        }
-        else{//se non ho trovato un'opzione valida devo gestire un errore
-            fprintf(stderr, RED "found wrong argument\n");
-            print_help();
-            exit(1);
         }
     }
     /*--> controllo se c'e' qualche opzione non ancora inizializzata(sarebbe possibile fare anche un inserimento interrattivo) */
@@ -237,6 +263,6 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
     }
     if(*max_len==-1){
         printf(YELLOW "\nsetting default max length\n");
-        *max_len=100;
+        *max_len=600;
     }
 }
