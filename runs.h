@@ -29,7 +29,10 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     //* --> eseguo la data su un file temporaneo per poi salvarmele */
     dup2(tmp_date,1);//fa in modo che lo stdout punti al file che conterra' la data di esecuzione
     system("date");//eseguo il comando che mi da la data
-
+    
+    dup2(standard_out, 1);
+    printf(YELLOW "<solo_run:info> command to run is (%s)\n", command);
+    
     //* --> eseguo il comando passato sui file temporanei e poi rimetto stout e stderr a quelli necessari */
     dup2(input, 0);//fa in modo che l'input derivi da tastiera o dal pipe passato
     dup2(tmp_out,1);//fa in modo che stdout punti al file temporaneo
@@ -57,6 +60,14 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     //* --> gestisco il risulato dello stdout del comando */
     wbytes = lseek(tmp_out, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di stdout
     lseek (tmp_out, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
+    dup2(standard_out, 1);
+    printf("number of bytes read in the standard output is : %d ", wbytes);
+    if(wbytes>max_len){
+        printf("(number of bytes exceded the max length)\n");
+        wbytes=max_len;
+    }
+    dup2(output,1);
+    printf("\n\n"RESET);
     if(wbytes>0){//se ho letto dei dati vuol dire che il comando ha stampato qualcosa nel suo stdout
         cmd_strout = (char *)malloc(wbytes * sizeof(char));//alloco memoria necesseria per contenere il file che contiene lo stdout
         if(cmd_strout == NULL){//controlla che il buffer sia stato effettivamente creato
@@ -93,6 +104,14 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     //* --> gestisco il risulato dello stderr del comando(allo stesso modo come ho fatto per il stdout) */
     wbytes = lseek(tmp_err, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di stdout
     lseek (tmp_err, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
+    dup2(standard_out, 1);
+    printf(YELLOW "\nnumber of bytes read in the error output is : %d ", wbytes);
+    if(wbytes>max_len){
+        printf("(number of bytes exceded the max length)\n");
+        wbytes=max_len;
+    }
+    dup2(output,1);
+    printf("\n\n"RESET);
     if(wbytes>0){
         cmd_strerr = (char *)malloc(wbytes * sizeof(char));//alloco memoria necesseria per contenere il file
         if(cmd_strerr == NULL){//controlla che il buffer sia stato effettivamente creato
@@ -128,12 +147,16 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     dup2(standard_inp,0);
     dup2(standard_out,1);
     dup2(standard_err,2);
-    printf(YELLOW "\nreturn value is : %i ", r);
+    printf(YELLOW "\nreturn value is : %i " RESET, r);
     printf(RESET "\n");
 }
 
 void pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, int code, int *tmppipe){
-    printf(MAGENTA "<pipedrun:info>I'm a piped run, y is : %i\n" RESET, y);
+    printf(MAGENTA "<pipedrun:info>I'm a piped run, y is %i. Commands to run are: \n", y);
+    for(int i=0; i<y;i++){
+        printf("(%s) ",cmd[i]);
+    }
+    printf("\n" RESET);
     sleep(1);
     int child_pid;//conterra' il pid del figlio
     int fd_pipe[2];//conterra' il pipe
@@ -144,21 +167,26 @@ void pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, i
         close(fd_pipe[WRITE]);//la scrittura non mi serve, devo solo leggere cosa mi hanno dato i figli e al massimo "inoltrare" al padre superiore
         wait(NULL);//aspetto che i figli finiscano
         if(tmppipe==NULL){//se il pipe temporaneo non e' inizializzato ful dire che sono il padre principale(quello che deve eseguire l'ultimo comando)
+            printf(MAGENTA "(FATHER)<pipedrun:info> I'm the last command\n" RESET);
             solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], standard_out, standard_err);//quindi eseguo il comando predendo in input cio' che mi hanno messo i figli nel pipe e stampo a schermo
         }else{//altrimenti vuol dire che esiste il pipe temporaneo e sono un "sotto-padre" che deve solo inoltrare ai superiori
+            printf(MAGENTA "(FATHER)<pipedrun:info> I'm an intermediate command\n" RESET);
             solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], tmppipe[WRITE], standard_err);//quindi leggo dal fd_pipe e mando l'output nel pipe temporaneo
         }
         close(fd_pipe[READ]);//quando ho finito chiudo il pipe
     }else{//figlio
         close(fd_pipe[READ]);//la lettura non mi serve
         if(y==3){//se c'e' praticamente solo un pipe vuol dire che sono l'ultimo figlio(quello che deve eseguire il primo comando)
+            printf(MAGENTA "(SON)<pipedrun:info> y = 3\n" RESET);
             solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, fd_pipe[WRITE], standard_err);//eseguo il comando prendendo lo standard input e passandolo nel fd_pipe
         }else if(y>0){//altrimenti vuol dire che sono un comando intermedio
+            printf(MAGENTA "(SON)<pipedrun:info> y = %i\n" RESET,y);
             pipedrun(cmd, y-2, out_path, err_path, max_len, code, fd_pipe);//quindi richiamo la pipedrun passando pero' il pipe
         }
         close(fd_pipe[WRITE]);
         exit(0);
     }
+    kill(SIGKILL,child_pid);
 }
 
 
