@@ -133,6 +133,8 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
 }
 
 void pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, int code, int *tmppipe){
+    printf(MAGENTA "<pipedrun:info>I'm a piped run, y is : %i\n" RESET, y);
+    sleep(1);
     int child_pid;//conterra' il pid del figlio
     int fd_pipe[2];//conterra' il pipe
     pipe(fd_pipe);//creo il pipe
@@ -151,7 +153,7 @@ void pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, i
         close(fd_pipe[READ]);//la lettura non mi serve
         if(y==3){//se c'e' praticamente solo un pipe vuol dire che sono l'ultimo figlio(quello che deve eseguire il primo comando)
             solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, fd_pipe[WRITE], standard_err);//eseguo il comando prendendo lo standard input e passandolo nel fd_pipe
-        }else{//altrimenti vuol dire che sono un comando intermedio
+        }else if(y>0){//altrimenti vuol dire che sono un comando intermedio
             pipedrun(cmd, y-2, out_path, err_path, max_len, code, fd_pipe);//quindi richiamo la pipedrun passando pero' il pipe
         }
         close(fd_pipe[WRITE]);
