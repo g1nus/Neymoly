@@ -31,7 +31,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     system("date");//eseguo il comando che mi da la data
     
     dup2(standard_out, 1);
-    printf(YELLOW "<solo_run:info> command to run is (%s)\n", command);
+    printf(YELLOW "[%i]<solo_run:info> command to run is (%s)\n",getpid(), command);
     
     //* --> eseguo il comando passato sui file temporanei e poi rimetto stout e stderr a quelli necessari */
     dup2(input, 0);//fa in modo che l'input derivi da tastiera o dal pipe passato
@@ -152,7 +152,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
 }
 
 void pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, int code, int *tmppipe){
-    printf(MAGENTA "<pipedrun:info>I'm a piped run, y is %i. Commands to run are: \n", y);
+    printf(MAGENTA "[%i]<pipedrun:info>I'm a piped run, y is %i. Commands to run are: \n", getpid(), y);
     for(int i=0; i<y;i++){
         printf("(%s) ",cmd[i]);
     }
@@ -186,7 +186,7 @@ void pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, i
         close(fd_pipe[WRITE]);
         exit(0);
     }
-    kill(SIGKILL,child_pid);
+    printf(MAGENTA "[%i]<pipedrun:info> I've finished\n", getpid());
 }
 
 
