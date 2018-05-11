@@ -47,7 +47,7 @@ int main(int argc, char *argv[]){
     }
     /*--> prendo in input i comandi */
     while(strcmp(input_buffer, "quit")){//continuo finche' l'utente non inserisce quit
-        printf(RESET "shell> ");
+        printf(RESET "[%i]shell> ", getpid());
         scanf (" %[^\n]%*c", input_buffer);//metto in input_buffer la linea presa in input(scanf legge fino a quando non trova invio)
         printf(BLUE "\n<main:info> string: %s - n_char : %i \n", input_buffer, strlen(input_buffer));
         /*--> divisione della stringa in tokens */
@@ -67,7 +67,8 @@ int main(int argc, char *argv[]){
                 printf(BLUE "<main:info> found only one command, going to run it\n\n" RESET);
                 solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err);
             }
-            if(strcmp(cmd[1],"|")==0){
+            if(y>2){
+                printf(BLUE "<main:info> found pipe, calling pipedrun\n\n" RESET);
                 pipedrun(cmd, y, out_path, err_path, max_len, code,NULL);
             }
         }
