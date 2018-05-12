@@ -11,8 +11,6 @@ void setstd(){
 //metodo che controlla se il comando è cd e se può lo esegue
 int isCD(char *command)
 {
-printf("<isCD:info> command to check is : %s\n",command);
-fflush(stdout);
 int i=0; //la posizione di "cd" nel comando
 int res=-1; //controllo cosa so (se è 1 ho trovato cd)
 while((res==-1)&&(strlen(command)>i+4)) //controllo che non abbia già trovato cd e che ci sia spazio rimanente per un path
@@ -39,8 +37,6 @@ return res;
 }
 void solo_run(char *command, char *out_path, char *err_path, int max_len, int code, int input, int output, int error){//contiene input, output e error
     int cd = isCD(command);
-    printf("cd is : %i\n", cd);
-    fflush(stdout);
     int fd;//uno per il file di log di output  e uno per il file di log di errori
     int tmp_out;//conterra' temporaneamente l'output del programma(file)
     int tmp_err;//conterra' temporaneamente lo stderr del programma(file)
@@ -96,7 +92,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     lseek (tmp_out, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
     if(wbytes>0){//se ho letto dei dati vuol dire che il comando ha stampato qualcosa nel suo stdout
         dup2(standard_out,1);
-        printf(YELLOW "found %i bytes to read", wbytes);
+        printf(YELLOW "found %i bytes to read on the standard output", wbytes);
         cmd_strout = (char *)malloc(wbytes * sizeof(char));//alloco memoria necesseria per contenere il file che contiene lo stdout
         if(cmd_strout == NULL){//controlla che il buffer sia stato effettivamente creato
             fprintf(stderr, "<solo_run:error> failed to create buffer");
@@ -142,20 +138,30 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     wbytes = lseek(tmp_err, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di stdout
     lseek (tmp_err, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
     if(wbytes>0){
-        cmd_strerr = (char *)malloc(wbytes * sizeof(char));//alloco memoria necesseria per contenere il file
+        dup2(standard_out,1);
+        printf(YELLOW "found %i bytes to read on the standard error", wbytes);
+        cmd_strerr = (char *)malloc(wbytes * sizeof(char));//alloco memoria necesseria per contenere il file che contiene lo stdout
         if(cmd_strerr == NULL){//controlla che il buffer sia stato effettivamente creato
             fprintf(stderr, "<solo_run:error> failed to create buffer");
             exit(1);
         }
-        if(read(tmp_err, cmd_strerr, wbytes)<0){//salvo il contenuto del file in una stringa
-            printf("<solo_run:error> there was an error reading the err file\n");
+        if(wbytes>max_len){
+            printf("(exceded max_len, truncating output)");
+            wbytes=max_len;
         }
-        close(tmp_err);
+        printf("\n" RESET);
+        if(read(tmp_err, cmd_strerr, wbytes)<0){//salvo il contenuto del file nella stringa creata
+            printf("<solo_run:error> there was an error reading the out file\n");
+        }
+        close(tmp_err);//chiudo il file da cui ho fatto la lettura
         //* -> fix per l'ultimo carattere */
         if(strlen(cmd_strerr)!=wbytes){
-            //printf(RED "suspicious character found at end of string, gonna fix\n" RESET);
-            cmd_strerr[wbytes] = 00;
+            printf(RED "suspicious character found at end of string, gonna fix\n" RESET);
+            cmd_strout[wbytes] = 00;
         }
+        fflush(stdout);
+        dup2(output,1);
+ 
         fprintf(stderr, "%s", cmd_strerr);//stampo il contenuto della string sullo schermo o nel pipe
         fd=open(err_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare l'output in append
         if(fd<0){

@@ -48,7 +48,13 @@ int main(int argc, char *argv[]){
     /*--> prendo in input i comandi */
     while(strcmp(input_buffer, "quit")){//continuo finche' l'utente non inserisce quit
         printf(RESET "[%i]shell> ",getpid());
-        scanf (" %[^\n]%*c", input_buffer);//metto in input_buffer la linea presa in input(scanf legge fino a quando non trova invio)
+        //scanf (" %[^\n]%*c", input_buffer);//metto in input_buffer la linea presa in input(scanf legge fino a quando non trova invio)
+        fgets(input_buffer, 100, stdin);
+        if(strlen(input_buffer)==1){
+            continue;
+        }else{
+            strtok(input_buffer,"\n");
+        }
         printf(BLUE "\n<main:info> string: %s - n_char : %i \n", input_buffer, strlen(input_buffer));
         /*--> divisione della stringa in tokens */
         tok_manager(input_buffer, &arr, &cmd, &x, &y);//dentro arr mi trovero le diverse stringhe passare in input e in cmd i comandi passati
