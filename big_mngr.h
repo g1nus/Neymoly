@@ -79,7 +79,7 @@ void tok_manager(char *input_buffer,char *(*arr)[10], char *(*cmd)[10], int *a, 
 
 void args_manager(int argc, char *argv[], char **out_path, char **err_path, int *max_len, int *code){
     // - controlla e sistema gli argomenti passati al main
-    char *opt,*content;//per gli argomenti composti opt conterra' l'opzione e content il contenuto dell'opzione
+    char *opt,*content,*c;//per gli argomenti composti opt conterra' l'opzione e content il contenuto dell'opzione
     opt = (char *)malloc(9 * sizeof(char));
     content =(char *)malloc(50 * sizeof(char));
     /*--> controllo se ho un numero ragionevole di argomenti */
@@ -95,15 +95,26 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
     }
     /*--> controllo se si tratta di una richiesta per una modalita' interattiva */
     if(argc == 2 && (strcmp(argv[1],"-i") == 0 || strcmp(argv[1],"--interactive") == 0)){
-        printf("insert the out_path : ");
+        printf("insert the out_path(press enter for default value) : ");
         *out_path =(char *)malloc(50 * sizeof(char));//alloco la memoria necessaria per il buffer
-        //scanf("%s", *out_path);
         fgets(*out_path, 50, stdin);
+        strtok(*out_path,"\n");
+        if(strlen(*out_path)==1){
+            *out_path="/dev/null";          
+        }else{
+            strtok(*out_path,"\n");
+        }
         printf(GREEN "setting path for the output log file to : %s\n", *out_path);
-        printf(RESET "insert the err_path : ");
+        printf(RESET "insert the err_path(press enter for default value) : ");
         *err_path =(char *)malloc(50 * sizeof(char));//alloco la memoria necessaria per il buffer
+        fgets(*err_path, 50, stdin);
+        if(strlen(*err_path)==1){
+            *err_path="/dev/null";          
+        }else{
+            strtok(*err_path,"\n");
+        }
         printf(GREEN "setting path for the error log file to : %s\n", *err_path);
-        printf(RESET "insert the code(f:false or t: true): ");
+        printf(RESET "insert the code(f:false, t: true or enter for default value): ");
         fgets(opt, 9, stdin);
         if(strcmp(opt,"t")==0){
             printf(GREEN "setting return code flag to : true\n");
@@ -112,13 +123,18 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
             printf(GREEN "setting return code flag to : false\n");
             *code=0;
         }else{
-            fprintf(stderr, YELLOW "incoherent input, setting default value(false)\n");
+            fprintf(stderr, YELLOW "setting default value(false)\n");
             *code=0;
         }
-        printf(RESET "insert the max_len: ");
+        printf(RESET "insert the max_len(press enter for default value) : ");
         fgets(opt, 9, stdin);
-        *max_len = atoi(opt);
+        if(strlen(opt)==1){
+            *max_len=100000;
+        }else{
+            *max_len = atoi(opt);
+        }
         printf(GREEN "setting max output lenght to : %d\n", *max_len);
+        fflush(stdout);
     }else{
         for(int i=1; i<argc; i++){
             /*--> prima di tutto controllo che nell'argv[i] non siano presenti caratteri speciali */
