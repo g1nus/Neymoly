@@ -97,14 +97,14 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
     if(argc == 2 && (strcmp(argv[1],"-i") == 0 || strcmp(argv[1],"--interactive") == 0)){
         printf("insert the out_path : ");
         *out_path =(char *)malloc(50 * sizeof(char));//alloco la memoria necessaria per il buffer
-        scanf("%s", *out_path);
+        //scanf("%s", *out_path);
+        fgets(*out_path, 50, stdin);
         printf(GREEN "setting path for the output log file to : %s\n", *out_path);
         printf(RESET "insert the err_path : ");
         *err_path =(char *)malloc(50 * sizeof(char));//alloco la memoria necessaria per il buffer
-        scanf("%s", *err_path);
         printf(GREEN "setting path for the error log file to : %s\n", *err_path);
         printf(RESET "insert the code(f:false or t: true): ");
-        scanf("%s", opt);
+        fgets(opt, 9, stdin);
         if(strcmp(opt,"t")==0){
             printf(GREEN "setting return code flag to : true\n");
             *code=1;
@@ -116,7 +116,8 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
             *code=0;
         }
         printf(RESET "insert the max_len: ");
-        scanf("%d", &(*max_len));
+        fgets(opt, 9, stdin);
+        *max_len = atoi(opt);
         printf(GREEN "setting max output lenght to : %d\n", *max_len);
     }else{
         for(int i=1; i<argc; i++){
@@ -263,6 +264,6 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
     }
     if(*max_len==-1){
         printf(YELLOW "\nsetting default max length\n");
-        *max_len=600;
+        *max_len=100000;
     }
 }
