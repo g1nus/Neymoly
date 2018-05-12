@@ -22,7 +22,7 @@
 
 int main(int argc, char *argv[]){
     setstd();//setta i file descriptor standard
-    char *err_path=NULL, *out_path=NULL; int max_len=-1, code=-1;//conterranno i contenuti delle opzioni che verranno usati
+    char *err_path, *out_path; int max_len=-1, code=-1; err_path=NULL; out_path=NULL;//conterranno i contenuti delle opzioni che verranno usati
     /*--> controllo che gli argomenti passati all'eseguibile siano corretti */
     printf(RESET "----------------------------------------\n\n");
     args_manager(argc, argv, &out_path, &err_path, &max_len, &code);//args_manager andra' a mettere all'interno delle variabili gli opportuni valori che trova
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]){
     }
     /*--> prendo in input i comandi */
     while(strcmp(input_buffer, "quit")){//continuo finche' l'utente non inserisce quit
-        printf(RESET "[%i]shell> ", getpid());
+        printf(RESET "[%i]shell> ",getpid());
         scanf (" %[^\n]%*c", input_buffer);//metto in input_buffer la linea presa in input(scanf legge fino a quando non trova invio)
         printf(BLUE "\n<main:info> string: %s - n_char : %i \n", input_buffer, strlen(input_buffer));
         /*--> divisione della stringa in tokens */
@@ -61,17 +61,14 @@ int main(int argc, char *argv[]){
             printf("(%s) ", cmd[i]);
         }
         printf("\n");
-        sleep(1);
         if(strcmp(cmd[0],"quit")!=0){//se i comandi inseriti non sono un quit provo a eseguirli
             if(y==1){
-                printf(BLUE "<main:info> found only one command, going to run it\n\n" RESET);
                 solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err);
-            }
-            if(y>2){
-                printf(BLUE "<main:info> found pipe, calling pipedrun\n\n" RESET);
+            }else{
                 pipedrun(cmd, y, out_path, err_path, max_len, code,NULL);
             }
         }
     }
     return 0;
 }
+
