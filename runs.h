@@ -8,8 +8,39 @@ void setstd(){
     standard_err = dup(2);//mi salvo lo stderr(video)
 
 }
-
+//metodo che controlla se il comando è cd e se può lo esegue
+int isCD(char *command)
+{
+printf("<isCD:info> command to check is : %s\n",command);
+fflush(stdout);
+int i=0; //la posizione di "cd" nel comando
+int res=-1; //controllo cosa so (se è 1 ho trovato cd)
+while((res==-1)&&(strlen(command)>i+4)) //controllo che non abbia già trovato cd e che ci sia spazio rimanente per un path
+{
+if(command[i]==' ')
+i++;
+else if ((command[i]=='c')&&(command[i+1]=='d')&&(command[i+2]==' '))
+res=1;
+else
+res=0;
+}
+if(res==1)
+{
+if(strstr(command,"..")!=NULL)
+{
+chdir("..");
+}
+else
+{ //non funziona se ci sono parametri
+chdir(&(command[i+3]));
+}
+}
+return res;
+}
 void solo_run(char *command, char *out_path, char *err_path, int max_len, int code, int input, int output, int error){//contiene input, output e error
+    int cd = isCD(command);
+    printf("cd is : %i\n", cd);
+    fflush(stdout);
     int fd;//uno per il file di log di output  e uno per il file di log di errori
     int tmp_out;//conterra' temporaneamente l'output del programma(file)
     int tmp_err;//conterra' temporaneamente lo stderr del programma(file)
@@ -38,7 +69,9 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     dup2(input, 0);//fa in modo che l'input derivi da tastiera o dal pipe passato
     dup2(tmp_out,1);//fa in modo che stdout punti al file temporaneo
     dup2(tmp_err,2);//fa in modo che stderr punti al file temporaneo
-    r=WEXITSTATUS(system(command));//esegue il comando e salva in r la variabile di stato $?
+    if(cd!=1){
+        r=WEXITSTATUS(system(command));//esegue il comando e salva in r la variabile di stato $?
+    }
     dup2(output,1);//rimette lo stdout dove necessario
     dup2(error,2);//rimette lo stderr dove necessario
 
@@ -123,7 +156,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             //printf(RED "suspicious character found at end of string, gonna fix\n" RESET);
             cmd_strerr[wbytes] = 00;
         }
-        printf("%s", cmd_strerr);//stampo il contenuto della string sullo schermo o nel pipe
+        fprintf(stderr, "%s", cmd_strerr);//stampo il contenuto della string sullo schermo o nel pipe
         fd=open(err_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare l'output in append
         if(fd<0){
             printf("<solo_run:error> there was an error accessing the file\n");
