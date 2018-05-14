@@ -39,6 +39,8 @@ int main(int argc, char *argv[]){
     /*--> variabili necessarie per fare i token e i comandi*/
     char *cmd[10];//conterra' il vettore dei comandi passati(puo' essere composto da piu' strighe)
     int y;//conterra' il numero di comandi
+    int cont=0; //conterrà qunati comandi sono stati passati dalla shell
+    int num_id;//conterrà il numero di comandi effettivi
     /*--> creo buffer per l'input */
     input_buffer = (char *)malloc(buff_size * sizeof(char));//alloco la memoria necessaria per il buffer
     if(input_buffer == NULL){//controlla che il buffer sia stato effettivamente creato
@@ -57,7 +59,7 @@ int main(int argc, char *argv[]){
         }
         printf(BLUE "\n<main:info> string: %s - n_char : %i \n", input_buffer, strlen(input_buffer));
         /*--> divisione della stringa in tokens */
-        tok_manager(input_buffer, &cmd, &y);//dentro arr mi trovero le diverse stringhe passare in input e in cmd i comandi passati
+        tok_manager(input_buffer, &cmd, &y, &num_id);//dentro arr mi trovero le diverse stringhe passare in input e in cmd i comandi passati
         printf("<main:info> the funzione ha finished\n");
         printf("\n<main:info> total commands received : %i --> ", y);
         for(int i=0; i<y; i++){
@@ -65,13 +67,13 @@ int main(int argc, char *argv[]){
         }
         printf("\n");
         if(strcmp(cmd[0],"quit")!=0){//se i comandi inseriti non sono un quit provo a eseguirli
+          cont++;
             if(y==1){
-                solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err);
+                solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err,cont,num_id);
             }else{
-                pipedrun(cmd, y, out_path, err_path, max_len, code,NULL);
+                pipedrun(cmd, y, out_path, err_path, max_len, code,NULL,cont,num_id);
             }
         }
     }
     return 0;
 }
-
