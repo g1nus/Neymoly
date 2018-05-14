@@ -31,53 +31,63 @@ void print_help(){
 
 void tok_manager(char *input_buffer,char *(*arr)[10], char *(*cmd)[10], int *a, int *b){//arr e' l'array che conterra' gli argomenti mentre cmd i comandi effettivi, il pipe e' considerato un comando
     // - controlla che gli argomenti(singole stringhe suddivise da spazi) passati alla custom shell siano coerenti e li organizza in comandi e pipe, un futuro puo' essere usato per organizzare in altri modi
-    int x=0, y=0, p_previous=0;//x e' il contatore di argomenti, y e' il contatore di comandi effettivi e pipe, p_previous e' un flag che controlla che non ci siano pipe consecutivi senza comandi in mezzo
-    char *tok;//conterra' gli argomenti
-    tok = strtok(input_buffer, " ");//tok conterra' in questo primo caso tutto cio' che c'e' prima del primo spazio
-    (*cmd)[y] = malloc(100*sizeof(char));//alloco dello spazio nell'array di stringhe che conterra' i comandi
-    strcpy((*cmd)[y], "");//metto un carattere vuoto a cui appendera' gli argomenti che fanno parte del comando
-    while(tok != NULL){//finche' trovo token
-        (*arr)[x] = malloc(50 *sizeof(char));//alloco memoria necessaria per salvare un argomento
-        strcpy((*arr)[x],tok);//ci metto dentro il token trovato
-        if(chk_ascii((*arr)[x])==0){//se non e' ascii standard me ne esco
-            print_help();
-            exit(1);
-        }
-        if(strcmp((*arr)[x],"|")!=0){//se non si tratta di un pipe lo appendo all'attuale comando
-            if(strcmp((*cmd)[y],"")!=0){//se il comando non era vuoto aggiungo prima uno spazio
-                strcat((*cmd)[y], " ");
-                strcat((*cmd)[y], (*arr)[x]);
-            }else{//altrimenti ci butto semplicmente l'argomento dentro
-                strcat((*cmd)[y], (*arr)[x]);
+    int x=0, y=0, p_previous=0,p=0;//x e' il contatore di argomenti, y e' il contatore di comandi effettivi e pipe, p_previous e' un flag che controlla che non ci siano pipe consecutivi senza comandi in mezzo
+    char ch;
+    (*cmd)[y]=malloc(100+sizeof(char));
+    printf("<tok_manager:info> character vector is %i bytes long\n",strlen(input_buffer));
+    for(int i=0;i<strlen(input_buffer);i++){
+        printf("(%i) --> (%c)\n", i, input_buffer[i]);
+        if(input_buffer[i]==' '){
+            printf("that's a space ");
+            while(input_buffer[i]==' '){
+                i++;
             }
-            p_previous=0;
-        }else{//se si tratta di un pipe
-            if(p_previous==1){//controllo che non ce ne sia stato uno subito prima
-                fprintf(stderr, RED "incoherent pipe\n");
-                print_help();
-                exit(1);
+            printf("cmd[y] is %s, input_buffer[i] is %c\n",(*cmd)[y], input_buffer[i]);
+            if(input_buffer[i]!='|' && input_buffer[i]!='>'){
+                if(p!=0){
+                    (*cmd)[y][p]=' ';
+                    p++;
+                }
+                (*cmd)[y][p]=input_buffer[i];
+                p++;
+            }else{
+                i--;
             }
-            y++;//aggiorno il contatore dei comandi trovati e ci salvo dentro il pipe
-            (*cmd)[y] = malloc(100*sizeof(char));
-            strcpy((*cmd)[y],(*arr)[x]);
-            y++;//mi preparo per il successivo comando
-            (*cmd)[y] = malloc(100*sizeof(char));
-            strcpy((*cmd)[y],"");
-            p_previous=1;
+        }else{
+            if(input_buffer[i]=='|' || input_buffer[i]=='>'){
+                if(p_previous==1){
+                    printf(RED "incoherent piping\n");
+                    exit(1);
+                }
+                p_previous=1;
+                printf("now i found a pipe\n");
+                y++;
+                (*cmd)[y]=malloc(100+sizeof(char));
+                (*cmd)[y][0]=input_buffer[i];
+                printf("pipe character is here(Y:%i) --> %s\n",y,(*cmd)[y]);
+                y++;
+                (*cmd)[y]=malloc(100+sizeof(char));
+                p=0;
+            }else{
+                p_previous=0;
+                (*cmd)[y][p]=input_buffer[i];
+                p++;
+            }
         }
-        x++;//aggiorno il numero di argomenti totali
-        tok = strtok(NULL, " ");//continuo con la restante stringa fino al prossimo pipe o fino alla fine
+        printf("(Y:%i) --> %s\n",y,(*cmd)[y]);
     }
+    printf("finshed, y is %i\n",y);
     *a = x;//in a passo il numero di argomenti
     *b = y+1;//in b passo l'indice dell'ultimo comando piu' uno, per avere in numero totale di comandi
-    if(strcmp((*arr)[0],"|")==0 || strcmp((*arr)[x-1],"|")==0){//controlla che il primo o l'ultimo comando non sia un pipe 
+    if(strcmp((*cmd)[0],"")==0 || strcmp((*cmd)[y],"")==0){//controlla che il primo o l'ultimo comando non sia un pipe 
         fprintf(stderr, RED "incoherent pipe\n");
         print_help();
         exit(1);    
-    }    
+    }
 }
 
-void args_manager(int argc, char *argv[], char **out_path, char **err_path, int *max_len, int *code){
+void args_manager(int argc, char *argv[], char **out_path, char **err_path, int *max_len, int *code, char *cwd){
+    printf("the current working directory is : %s\n", cwd);
     // - controlla e sistema gli argomenti passati al main
     char *opt,*content,*c;//per gli argomenti composti opt conterra' l'opzione e content il contenuto dell'opzione
     opt = (char *)malloc(9 * sizeof(char));
@@ -96,7 +106,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
     /*--> controllo se si tratta di una richiesta per una modalita' interattiva */
     if(argc == 2 && (strcmp(argv[1],"-i") == 0 || strcmp(argv[1],"--interactive") == 0)){
         printf("insert the out_path(press enter for default value) : ");
-        *out_path =(char *)malloc(50 * sizeof(char));//alloco la memoria necessaria per il buffer
+        *out_path =(char *)malloc(50+1024 * sizeof(char));//alloco la memoria necessaria per il buffer
         fgets(*out_path, 50, stdin);
         strtok(*out_path,"\n");
         if(strlen(*out_path)==1){
@@ -116,10 +126,10 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
         printf(GREEN "setting path for the error log file to : %s\n", *err_path);
         printf(RESET "insert the code(f:false, t: true or enter for default value): ");
         fgets(opt, 9, stdin);
-        if(strcmp(opt,"t")==0){
+        if(strcmp(opt,"t\n")==0){
             printf(GREEN "setting return code flag to : true\n");
             *code=1;
-        }else if(strcmp(opt,"f")==0){
+        }else if(strcmp(opt,"f\n")==0){
             printf(GREEN "setting return code flag to : false\n");
             *code=0;
         }else{
@@ -146,7 +156,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
             if(strcmp(argv[i],"-o") == 0){
                 printf(GREEN "found output file option(-o %s)\n", argv[i+1]);//stampo anche l'argomento successivo perche' dovrebbe essere il contenuto dell'opzione
                 if((i+1<argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && *out_path==NULL && chk_ascii(argv[i+1]) == 1){//se esiste il contenuto dell'opzione e non e' stata ancora inizilizzata
-                    *out_path = (char *)malloc(strlen(argv[i+1])+1 * sizeof(char));
+                    *out_path = (char *)malloc(strlen(argv[i+1])+1+1024 * sizeof(char));
                     strcpy(*out_path, argv[i+1]);//lo salvo
                     i++;//skippo il prossimo arg che tanto era il contenuto
                 }else{
@@ -204,7 +214,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                 sprintf(content, "%s", argv[i]+10);//sprintf mi permette di predere tutti i caratteri fino alla fine(partendo da 10 in questo caso),
                 printf("content is : %s \n", content);
                 if(*out_path==NULL){
-                    *out_path = (char *)malloc(strlen(content)+1 * sizeof(char));
+                    *out_path = (char *)malloc(strlen(content)+1+1024 * sizeof(char));
                     strcpy(*out_path, content);
                 }else{
                     fprintf(stderr, RED "error while reading output option\n");
@@ -281,5 +291,18 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
     if(*max_len==-1){
         printf(YELLOW "\nsetting default max length\n");
         *max_len=100000;
+    }
+    char tmp[1024];
+    if(*out_path[0]!='/'){
+        strcpy(tmp,*out_path);
+        strcpy(*out_path, cwd); //Put str2 or anyother string that you want at the begining
+        strcat(*out_path, "/");  //concatenate previous str1
+        strcat(*out_path, tmp);  //concatenate previous str1
+    }
+    if(*err_path[0]!='/'){
+        strcpy(tmp,*err_path);
+        strcpy(*err_path, cwd); //Put str2 or anyother string that you want at the begining
+        strcat(*err_path, "/");  //concatenate previous str1
+        strcat(*err_path, tmp);  //concatenate previous str1
     }
 }
