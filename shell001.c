@@ -23,9 +23,11 @@
 int main(int argc, char *argv[]){
     setstd();//setta i file descriptor standard
     char *err_path, *out_path; int max_len=-1, code=-1; err_path=NULL; out_path=NULL;//conterranno i contenuti delle opzioni che verranno usati
+    char cwd[1024];
+    getcwd(cwd, sizeof(cwd));
     /*--> controllo che gli argomenti passati all'eseguibile siano corretti */
     printf(RESET "----------------------------------------\n\n");
-    args_manager(argc, argv, &out_path, &err_path, &max_len, &code);//args_manager andra' a mettere all'interno delle variabili gli opportuni valori che trova
+    args_manager(argc, argv, &out_path, &err_path, &max_len, &code, cwd);//args_manager andra' a mettere all'interno delle variabili gli opportuni valori che trova
     printf(RESET "\nRECEIVED PARAMETERS----------------------------------------\n");
     printf(BLUE "out : %s - err : %s - max : %i - code : %i", out_path, err_path, max_len, code);//stampo i parametri ottenuti dall'args_manager
     printf(RESET "\n-----------------------------------------------------------\n");
@@ -35,9 +37,7 @@ int main(int argc, char *argv[]){
     char *input_buffer;//buffer effettivo
     size_t buff_size = 100;//numero di caratteri che il buffer puo' contenere
     /*--> variabili necessarie per fare i token e i comandi*/
-    char *arr[10];//conterra' il vettore delle stringe passate(attualmente puo' contenerene 10)
     char *cmd[10];//conterra' il vettore dei comandi passati(puo' essere composto da piu' strighe)
-    int x;//conterra' il numero di stringhe(argomenti) passati
     int y;//conterra' il numero di comandi
     /*--> creo buffer per l'input */
     input_buffer = (char *)malloc(buff_size * sizeof(char));//alloco la memoria necessaria per il buffer
@@ -47,8 +47,8 @@ int main(int argc, char *argv[]){
     }
     /*--> prendo in input i comandi */
     while(strcmp(input_buffer, "quit")){//continuo finche' l'utente non inserisce quit
-        printf(RESET "[%i]shell> ",getpid());
-        //scanf (" %[^\n]%*c", input_buffer);//metto in input_buffer la linea presa in input(scanf legge fino a quando non trova invio)
+        getcwd(cwd, sizeof(cwd));
+        printf(RESET "[%i]shell:%s> ",getpid(),cwd);
         fgets(input_buffer, 100, stdin);
         if(strlen(input_buffer)==1){
             continue;
@@ -57,11 +57,8 @@ int main(int argc, char *argv[]){
         }
         printf(BLUE "\n<main:info> string: %s - n_char : %i \n", input_buffer, strlen(input_buffer));
         /*--> divisione della stringa in tokens */
-        tok_manager(input_buffer, &arr, &cmd, &x, &y);//dentro arr mi trovero le diverse stringhe passare in input e in cmd i comandi passati
-        printf("<main:info> total arguments received  : %i --> ", x);
-        for(int i=0; i<x; i++){
-            printf("(%s) ", arr[i]);
-        }
+        tok_manager(input_buffer, &cmd, &y);//dentro arr mi trovero le diverse stringhe passare in input e in cmd i comandi passati
+        printf("<main:info> the funzione ha finished\n");
         printf("\n<main:info> total commands received : %i --> ", y);
         for(int i=0; i<y; i++){
             printf("(%s) ", cmd[i]);
