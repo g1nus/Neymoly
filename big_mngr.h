@@ -29,9 +29,9 @@ void print_help(){
     printf(RESET "----------------------------------------\n");
 }
 
-void tok_manager(char *input_buffer,char *(*arr)[10], char *(*cmd)[10], int *a, int *b){//arr e' l'array che conterra' gli argomenti mentre cmd i comandi effettivi, il pipe e' considerato un comando
+void tok_manager(char *input_buffer, char *(*cmd)[10], int *b){//arr e' l'array che conterra' gli argomenti mentre cmd i comandi effettivi, il pipe e' considerato un comando
     // - controlla che gli argomenti(singole stringhe suddivise da spazi) passati alla custom shell siano coerenti e li organizza in comandi e pipe, un futuro puo' essere usato per organizzare in altri modi
-    int x=0, y=0, p_previous=0,p=0;//x e' il contatore di argomenti, y e' il contatore di comandi effettivi e pipe, p_previous e' un flag che controlla che non ci siano pipe consecutivi senza comandi in mezzo
+    int y=0, p_previous=0,p=0;//y e' il contatore di comandi effettivi e pipe, p_previous e' un flag che controlla che non ci siano pipe consecutivi senza comandi in mezzo
     char ch;
     (*cmd)[y]=malloc(100+sizeof(char));
     printf("<tok_manager:info> character vector is %i bytes long\n",strlen(input_buffer));
@@ -77,7 +77,6 @@ void tok_manager(char *input_buffer,char *(*arr)[10], char *(*cmd)[10], int *a, 
         printf("(Y:%i) --> %s\n",y,(*cmd)[y]);
     }
     printf("finshed, y is %i\n",y);
-    *a = x;//in a passo il numero di argomenti
     *b = y+1;//in b passo l'indice dell'ultimo comando piu' uno, per avere in numero totale di comandi
     if(strcmp((*cmd)[0],"")==0 || strcmp((*cmd)[y],"")==0){//controlla che il primo o l'ultimo comando non sia un pipe 
         fprintf(stderr, RED "incoherent pipe\n");
