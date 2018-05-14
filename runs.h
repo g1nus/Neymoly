@@ -11,37 +11,62 @@ void setstd(){
 //metodo che controlla se il comando è cd e se può lo esegue
 int isCD(char *command)
 {
-int i=0; //la posizione di "cd" nel comando
-int res=-1; //controllo cosa so (se è 1 ho trovato cd)
-while((res==-1)&&(strlen(command)>i+4)) //controllo che non abbia già trovato cd e che ci sia spazio rimanente per un path
-{
-if(command[i]==' ')
-i++;
-else if ((command[i]=='c')&&(command[i+1]=='d')&&(command[i+2]==' '))
-res=1;
-else
-res=0;
+    int i=0; //la posizione di "cd" nel comando
+    int res=-1; //controllo cosa so (se è 1 ho trovato cd)
+    int len=strlen(command);
+    while((res==-1)&&(len>i+4)) //controllo che non abbia già trovato cd e che ci sia spazio rimanente per un path
+    {
+        if(command[i]==' ')
+            i++;
+        else if ((command[i]=='c')&&(command[i+1]=='d')&&(command[i+2]==' '))
+            res=1;
+        else
+            res=0;
+    }
+    if(res==1)//se è il comando cd entra qui
+    {
+	printf("<isCD:info> ho trovato il comando cd\n");
+        //aumento i fino ad togliere tutti i parametri
+        i+=3; //per arrivare alla prima parola dopo lo spazio
+        int findparameter=0;    //se vale 1 sto passando sopra un parametro
+        while(((command[i]==' ')||(command[i]!=' ' && findparameter==1)||(command[i]=='-'))&&(i<len))
+        {
+            if(command[i]=='-')
+                findparameter=1;
+            else if(findparameter==1 && command[i]==' ')
+                findparameter=0;
+            i++;
+        }
+        //a questo punto i dovrebbe essere la prima lettera del path
+        if(i<len)    //verifico che si possa effettivamente continuare
+        {
+            if(strstr(command,"..")!=NULL)
+            {
+                chdir("..");
+            }
+            else
+            { 
+                if(chdir(&(command[i]))<0){ //controlla se ha successo nel cambiare cartella
+                    printf("<isCD:error> couldn't access directory\n");
+                    res=0;
+                }
+            }
+            char cwd[1024];
+            if (getcwd(cwd, sizeof(cwd)) != NULL)
+                printf("<isCD:info> cartella di lavoro dopo il comando:: %s\n", cwd);
+        }
+    }
+    return res;
 }
-if(res==1)
-{
-if(strstr(command,"..")!=NULL)
-{
-chdir("..");
-}
-else
-{ //non funziona se ci sono parametri
-chdir(&(command[i+3]));
-}
-}
-return res;
-}
+
 void solo_run(char *command, char *out_path, char *err_path, int max_len, int code, int input, int output, int error){//contiene input, output e error
     int cd = isCD(command);
+    printf("<solo_run:info>cd = %i\n", cd);
     int fd;//uno per il file di log di output  e uno per il file di log di errori
     int tmp_out;//conterra' temporaneamente l'output del programma(file)
     int tmp_err;//conterra' temporaneamente lo stderr del programma(file)
     int tmp_date;//conterra' temporaneamente la data di esecuzione del programma(file)
-    int r;//conterra' il valore di ritorno della funzione
+    int r=0;//conterra' il valore di ritorno della funzione
     size_t wbytes;//conterra' il numero di byte scritti dal programma
     char *cmd_strout, *cmd_strerr, *cmd_strdate, cmd_strr[10];//conterra' le stringhe restituite dal programma
 
@@ -65,8 +90,10 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     dup2(input, 0);//fa in modo che l'input derivi da tastiera o dal pipe passato
     dup2(tmp_out,1);//fa in modo che stdout punti al file temporaneo
     dup2(tmp_err,2);//fa in modo che stderr punti al file temporaneo
-    if(cd!=1){
+    if(cd!=1){//se il comando non e' un cd, oppure se e' un cd sbagliato
         r=WEXITSTATUS(system(command));//esegue il comando e salva in r la variabile di stato $?
+    }else{
+        printf(" \n");
     }
     dup2(output,1);//rimette lo stdout dove necessario
     dup2(error,2);//rimette lo stderr dove necessario
