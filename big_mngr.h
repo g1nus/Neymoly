@@ -118,7 +118,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
         }
         printf(GREEN "setting path for the output log file to : %s\n", *out_path);
         printf(RESET "insert the err_path(press enter for default value) : ");
-        *err_path =(char *)malloc(50 * sizeof(char));//alloco la memoria necessaria per il buffer
+        *err_path =(char *)malloc(50+1024 * sizeof(char));//alloco la memoria necessaria per il buffer
         fgets(*err_path, 50, stdin);
         if(strlen(*err_path)==1){
             *err_path="/dev/null";
@@ -170,7 +170,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
             else if(strcmp(argv[i],"-e") == 0){
                 printf(GREEN "found error file option(-e %s)\n", argv[i+1]);
                 if((i+1<argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && *err_path==NULL && chk_ascii(argv[i+1]) == 1){
-                    *err_path = (char *)malloc(strlen(argv[i+1])+1 * sizeof(char));
+                    *err_path = (char *)malloc(strlen(argv[i+1])+1+1024 * sizeof(char));
                     strcpy(*err_path, argv[i+1]);
                     i++;
                 }else{
@@ -229,7 +229,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                 sprintf(content, "%s", argv[i]+10);//sarebbe anche possibile usare strncpy se proprio si vuole
                 printf("content is : %s \n", content);
                 if(*err_path==NULL){
-                    *err_path = (char *)malloc(strlen(content)+1 * sizeof(char));
+                    *err_path = (char *)malloc(strlen(content)+1+1024 * sizeof(char));
                     strcpy(*err_path, content);
                 }else{
                     fprintf(stderr, RED "error while reading error option\n");
