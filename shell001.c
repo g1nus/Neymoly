@@ -42,12 +42,13 @@ int main(int argc, char *argv[]){
     int cont=0; //conterrà qunati comandi sono stati passati dalla shell
     int num_id;//conterrà il numero di comandi effettivi
     /*--> creo buffer per l'input */
-    input_buffer = (char *)malloc(buff_size * sizeof(char));//alloco la memoria necessaria per il buffer
+    input_buffer = (char *)malloc(100 * sizeof(char));//alloco la memoria necessaria per il buffer
     if(input_buffer == NULL){//controlla che il buffer sia stato effettivamente creato
         fprintf(stderr, "failed to create buffer");
         exit(1);
     }
     /*--> prendo in input i comandi */
+
     while(strcmp(input_buffer, "quit")){//continuo finche' l'utente non inserisce quit
         getcwd(cwd, sizeof(cwd));
         printf(RESET "[%i]shell:%s> ",getpid(),cwd);
@@ -69,6 +70,7 @@ int main(int argc, char *argv[]){
         if(strcmp(cmd[0],"quit")!=0){//se i comandi inseriti non sono un quit provo a eseguirli
           cont++;
             if(y==1){
+                printf("e: %s\n",err_path);
                 solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err,cont,num_id);
             }else{
                 pipedrun(cmd, y, out_path, err_path, max_len, code,NULL,cont,num_id);

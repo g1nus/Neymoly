@@ -61,6 +61,7 @@ int isCD(char *command)
 
 void solo_run(char *command, char *out_path, char *err_path, int max_len, int code, int input, int output, int error, int cc, int numd){//contiene input, output e error
     int cd = isCD(command);
+    printf("<solo_run:info> out_path=%s err_path=%s\n", out_path,err_path);
     printf("<solo_run:info>cd = %i\n", cd);
     int fd;//uno per il file di log di output  e uno per il file di log di errori
     int tmp_out;//conterra' temporaneamente l'output del programma(file)
@@ -177,7 +178,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     lseek (tmp_err, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
     if(wbytes>0){
         dup2(standard_out,1);
-        printf(YELLOW "found %i bytes to read on the standard error", wbytes);
+        printf(YELLOW "found %i bytes to read on the standard error, err_path is : %s\n", wbytes, err_path);
         cmd_strerr = (char *)malloc(wbytes * sizeof(char));//alloco memoria necesseria per contenere il file che contiene lo stdout
         if(cmd_strerr == NULL){//controlla che il buffer sia stato effettivamente creato
             fprintf(stderr, "<solo_run:error> failed to create buffer");
@@ -201,7 +202,33 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
         dup2(output,1);
 
         fprintf(stderr, "%s", cmd_strerr);//stampo il contenuto della string sullo schermo o nel pipe
-        fd=open(out_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare l'output in append
+        //++------++//
+        fd=open(out_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare l'output di errore in append
+        if(fd<0){
+            printf("<solo_run:error> there was an error accessing the file\n");
+        }
+        write(fd,cmd_strdate,strlen(cmd_strdate));
+        write(fd," )-> failed execution\n",23);
+        write(fd,"ID:",3);
+        sprintf(tmp,"%11d", cc);
+        write(fd,tmp,sizeof(tmp));
+        write(fd,".",1);
+        sprintf(tmp,"%11d", numd);
+        write(fd,tmp,sizeof(tmp));
+        write(fd,"\n",1);
+        write(fd," -----------\n", 14);
+        write(fd,"executed : ",12);
+        write(fd,command,sizeof(command));
+        write(fd,"\n",1);
+        write(fd,cmd_strerr,strlen(cmd_strerr));
+        write(fd," -----------\n", 14);
+        write(fd,"return code is : ",18);
+        write(fd,cmd_strr,strlen(cmd_strr));
+        write(fd,"\n",2);
+        write(fd,"----------------------------\n", 30);
+        close(fd);
+
+        fd=open(err_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare l'output di errore in append
         if(fd<0){
             printf("<solo_run:error> there was an error accessing the file\n");
         }
@@ -215,7 +242,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
         write(fd,"\n",2);
         write(fd,"----------------------------\n", 30);
         close(fd);
-        close(fd);
+        
     }
     dup2(standard_inp,0);
     dup2(standard_out,1);
