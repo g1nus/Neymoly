@@ -22,10 +22,11 @@ int chk_ascii(char *str){
 void print_help(){
     // - stampa una piccola guida
     printf(RESET "HOW TO USE START THE PROGRAM : \n");
-    printf("\t to set the output file : --outfile=\"<path>\" or -o <path>\n");
-    printf("\t to set the error file  : --errfile=\"<path>\" or -e <path>\n");
-    printf("\t to set the code flag   : --code=\"true\" or -c true or --code=\"false\" or -c false \n");
-    printf("\t to set the max lenght  : --maxlength=\"<unsingned int>\" or -m <unsingne int>\n\n");
+    printf("\t to set the output file    : --outfile=\"<path>\" or -o <path>\n");
+    printf("\t to set the error file     : --errfile=\"<path>\" or -e <path>\n");
+    printf("\t to set the code flag      : --code=\"true\" or -c true or --code=\"false\" or -c false \n");
+    printf("\t to set the max lenght     : --maxlength=\"<unsingned int>\" or -m <unsingne int>\n");
+    printf("\t to start interactive mode : --intercative or -i\n\n");
     printf(RESET "----------------------------------------\n");
 }
 
@@ -34,15 +35,15 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){//arr e' l
     int y=0, p_previous=0,p=0,n=0;//y e' il contatore di comandi effettivi e pipe, p_previous e' un flag che controlla che non ci siano pipe consecutivi senza comandi in mezzo
     char ch;
     (*cmd)[y]=malloc(100+sizeof(char));
-    printf("<tok_manager:info> character vector is %i bytes long\n",strlen(input_buffer));
+    //printf("<tok_manager:info> character vector is %i bytes long\n",strlen(input_buffer));
     for(int i=0;i<strlen(input_buffer);i++){
-        printf("(%i) --> (%c)\n", i, input_buffer[i]);
+        //printf("(%i) --> (%c)\n", i, input_buffer[i]);
         if(input_buffer[i]==' '){
-            printf("that's a space ");
+            //printf("that's a space ");
             while(input_buffer[i]==' '){
                 i++;
             }
-            printf("cmd[y] is %s, input_buffer[i] is %c\n",(*cmd)[y], input_buffer[i]);
+            //printf("cmd[y] is %s, input_buffer[i] is %c\n",(*cmd)[y], input_buffer[i]);
             if(input_buffer[i]!='|' && input_buffer[i]!='>'){
                 if(p!=0){
                     (*cmd)[y][p]=' ';
@@ -50,21 +51,22 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){//arr e' l
                 }
                 (*cmd)[y][p]=input_buffer[i];
                 p++;
+                p_previous=0;
             }else{
                 i--;
             }
         }else{
             if(input_buffer[i]=='|' || input_buffer[i]=='>'){
                 if(p_previous==1){
-                    printf(RED "incoherent piping\n");
+                    //printf(RED "incoherent piping, p_previous=1\n");
                     exit(1);
                 }
                 p_previous=1;
-                printf("now i found a pipe\n");
+                //printf("now i found a pipe\n");
                 y++;
                 (*cmd)[y]=malloc(100+sizeof(char));
                 (*cmd)[y][0]=input_buffer[i];
-                printf("pipe character is here(Y:%i) --> %s\n",y,(*cmd)[y]);
+                //printf("pipe character is here(Y:%i) --> %s\n",y,(*cmd)[y]);
                 y++;
                 (*cmd)[y]=malloc(100+sizeof(char));
                 p=0;
@@ -74,9 +76,9 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){//arr e' l
                 p++;
             }
         }
-        printf("(Y:%i) --> %s\n",y,(*cmd)[y]);
+        //printf("(Y:%i) --> %s\n",y,(*cmd)[y]);
     }
-    printf("finshed, y is %i\n",y);
+    //printf("finshed, y is %i\n",y);
     *b = y+1;//in b passo l'indice dell'ultimo comando piu' uno, per avere in numero totale di comandi
     n=y/2;
     n++;
@@ -306,5 +308,10 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
         strcpy(*err_path, cwd); //Put str2 or anyother string that you want at the begining
         strcat(*err_path, "/");  //concatenate previous str1
         strcat(*err_path, tmp);  //concatenate previous str1
+    }
+    if(strcmp(*err_path,"/dev/null")!=0 && strcmp(*out_path,"/dev/null")!=0 && (strcmp(*err_path,*out_path)==0)){
+        printf("you can't set outfile and errfile to the same path, use only outfile if you want everything on the same file\n");
+        print_help();
+        exit(1);
     }
 }
