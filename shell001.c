@@ -12,6 +12,7 @@
 #define GREEN   "\x1b[32m"
 #define YELLOW  "\x1b[33m"
 #define BLUE    "\x1b[34m" //colori carini
+#define CYAN    "\x1b[36m"
 #define MAGENTA "\x1b[35m"
 #define RESET   "\x1b[0m"
 #define READ 0 /* read-side of pipes */
@@ -58,10 +59,9 @@ int main(int argc, char *argv[]){
         }else{
             strtok(input_buffer,"\n");
         }
-        printf(BLUE "\n<main:info> string: %s - n_char : %i \n", input_buffer, strlen(input_buffer));
+        //printf(BLUE "\n<main:info> string: %s - n_char : %i \n", input_buffer, strlen(input_buffer));
         /*--> divisione della stringa in tokens */
         tok_manager(input_buffer, &cmd, &y, &num_id);//dentro arr mi trovero le diverse stringhe passare in input e in cmd i comandi passati
-        printf("<main:info> the funzione ha finished\n");
         printf("\n<main:info> total commands received : %i --> ", y);
         for(int i=0; i<y; i++){
             printf("(%s) ", cmd[i]);
@@ -71,11 +71,12 @@ int main(int argc, char *argv[]){
           cont++;
             if(y==1){
                 printf("e: %s\n",err_path);
-                solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err,cont,num_id);
+                solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err,cont,num_id,0);
             }else{
                 pipedrun(cmd, y, out_path, err_path, max_len, code,NULL,cont,num_id);
             }
         }
     }
+    printf(RESET "BYE!\n");
     return 0;
 }
