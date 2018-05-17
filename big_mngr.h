@@ -44,7 +44,7 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){//arr e' l
                 i++;
             }
             //printf("cmd[y] is %s, input_buffer[i] is %c\n",(*cmd)[y], input_buffer[i]);
-            if(input_buffer[i]!='|' && input_buffer[i]!='>'){
+            if(input_buffer[i]!='|' && input_buffer[i]!='>' && input_buffer[i]!='<'){
                 if(p!=0){
                     (*cmd)[y][p]=' ';
                     p++;
@@ -56,7 +56,7 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){//arr e' l
                 i--;
             }
         }else{
-            if(input_buffer[i]=='|' || input_buffer[i]=='>'){
+            if(input_buffer[i]=='|' || input_buffer[i]=='>' || input_buffer[i]=='<'){
                 if(p_previous==1){
                     //printf(RED "incoherent piping, p_previous=1\n");
                     exit(1);
