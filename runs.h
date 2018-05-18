@@ -278,9 +278,10 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     printf(RESET "\n");
 }
 
-void pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, int code, int *tmppipe, int cc, int num){
-    printf(MAGENTA "[%i]<pipedrun:info>I'm a piped run, y is %i. Commands to run are: \n", getpid(), y);
-    for(int i=0; i<y;i++){
+void pipedrun(char *cmd[], int y, int total, char *out_path, char *err_path, int max_len, int code, int *tmppipe, int cc, int num){
+    int i;
+    printf(MAGENTA "[%i]<pipedrun:info>I'm a piped run, y is %i, total is %i. Commands to run are: \n", getpid(), y, total);
+    for(i=0; i<y;i++){
         printf("(%s) ",cmd[i]);
     }
     printf("\n" RESET);
@@ -303,6 +304,8 @@ void pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, i
                 printf(MAGENTA "[%i]<pipedrun:info> [FIRST FATHER] There is a greater before the command, opening %s\n", getpid(), cmd[y-1]);
                 fd=open(cmd[y-1], O_WRONLY | O_APPEND | O_CREAT, 0777);
                 solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], fd, standard_err,cc,num,1);//quindi eseguo il comando predendo in input cio' che mi hanno messo i figli nel pipe e stampo a schermo
+            }else{
+                printf(MAGENTA "[%i]<pipedrun:info> [FIRST ATHER] I'm an input file(%s), I don't have to do nothing\n", getpid(), cmd[y-1]);
             }
         }else{//altrimenti vuol dire che esiste il pipe temporaneo e sono un "sotto-padre" che deve solo inoltrare ai superiori
             printf(MAGENTA "[%i]<pipedrun:info> [FATHER] The tmppipe is already created, so I'm a random father\n", getpid());
@@ -313,6 +316,10 @@ void pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, i
                 printf(MAGENTA "[%i]<pipedrun:info> [FATHER] There is a greater before the command, opening %s\n", getpid(), cmd[y-1]);
                 fd=open(cmd[y-1], O_WRONLY | O_APPEND | O_CREAT, 0777);
                 solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], fd, standard_err,cc,num,1);
+            }else{
+                //...scorrere fino al prossimo comando e passargli fd_pipe[READ]
+                printf(MAGENTA "[%i]<pipedrun:info> [FATHER] I'm an input file(%s), I need to forward to the next command\n", getpid(), cmd[y-1]);
+                solo_run(cmd[y-1], out_path, err_path, max_len, code, standard_inp, tmppipe[WRITE], standard_err,cc,num,1);
             }
         }
         close(fd_pipe[READ]);//quando ho finito chiudo il pipe
@@ -328,12 +335,13 @@ void pipedrun(char *cmd[], int y, char *out_path, char *err_path, int max_len, i
                 if(fd<0){
                     printf("[%i]<piperun:info> [LAST SON] Couldn't open the file\n", getpid());
                 }else{
+                    //...controllare se si tratta di dover fare uno standard output o un pipe output
                     solo_run(cmd[0], out_path, err_path, max_len, code, fd, standard_out, standard_err,cc,1,0);//eseguo il comando prendendo lo standard input e passandolo nel fd_pipe
                 }
             }
         }else{//altrimenti vuol dire che sono un comando intermedio
             printf(MAGENTA "[%i]<pipedrun:info> [SON] y is %i gonna call myself\n", getpid(),y);
-            pipedrun(cmd, y-2, out_path, err_path, max_len, code, fd_pipe,cc,--num);//quindi richiamo la pipedrun passando pero' il pipe
+            pipedrun(cmd, y-2, total, out_path, err_path, max_len, code, fd_pipe,cc,--num);//quindi richiamo la pipedrun passando pero' il pipe
         }
         close(fd_pipe[WRITE]);
         exit(0);
