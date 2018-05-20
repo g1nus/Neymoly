@@ -21,7 +21,12 @@
 #include "big_mngr.h"   //includo le procedure necessarie per il controllo e la gestione degli argomenti iniziali e delle stringhe passate come comandi
 #include "runs.h"       //includo le procedure necessarie per eseguire i comandi
 
+void kill_handler(int sig){
+  //....
+}
+
 int main(int argc, char *argv[]){
+    signal(SIGINT, kill_handler);
     setstd();   //setta i file descriptor standard
     char *err_path, *out_path; err_path = NULL; out_path = NULL;
     int max_len = -1, code = -1;    //conterranno i contenuti delle opzioni che verranno usati
@@ -52,6 +57,7 @@ int main(int argc, char *argv[]){
     //--> prendo in input i comandi
 
     while(strcmp(input_buffer, "quit")){    //continuo finche' l'utente non inserisce quit
+        fflush(stdout);
         getcwd(cwd, sizeof(cwd));
         printf(RESET "[%i]shell:%s> ", getpid(), cwd);
         fgets(input_buffer, 100, stdin);
@@ -78,6 +84,7 @@ int main(int argc, char *argv[]){
                 pipedrun(cmd, y, y, out_path, err_path, max_len, code, NULL, cont, num_id);
             }
         }
+        sleep(0.2);
     }
     free(input_buffer);
     printf(RESET "BYE!\n");
