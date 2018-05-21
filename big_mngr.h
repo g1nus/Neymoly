@@ -42,18 +42,20 @@ void print_help(){
 void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
     int y=0, p_previous=0, p=0, n=0;    //y e' il contatore di comandi effettivi e pipe, p_previous e' un flag che controlla che non ci siano pipe consecutivi senza comandi in mezzo
     char ch;
-    (*cmd)[y] = malloc(100 + sizeof(char));
-    //printf("<tok_manager:info> character vector is %i bytes long\n",strlen(input_buffer));
+    (*cmd)[y] = malloc(100 * sizeof(char));
+    memset((*cmd)[y],0,sizeof((*cmd)[y]));
+    printf(CYAN "<tok_manager:info> charactyyer vector is %i bytes long\n",strlen(input_buffer));
     int i;
     for(i = 0; i < strlen(input_buffer); i++){
-        //printf("(%i) --> (%c)\n", i, input_buffer[i]);
+        printf("(%i) --> (%c)\n", i, input_buffer[i]);
         if(input_buffer[i] == ' '){
             //printf("that's a space ");
-            while(input_buffer[i] == ' '){
+            while(input_buffer[i] == ' ' && i<strlen(input_buffer)){
                 i++;
             }
             //printf("cmd[y] is %s, input_buffer[i] is %c\n",(*cmd)[y], input_buffer[i]);
             if(input_buffer[i] != '|' && input_buffer[i] != '>' && input_buffer[i] != '<'){
+                if(i<strlen(input_buffer)-1){
                 if(p != 0){
                     (*cmd)[y][p] = ' ';
                     p++;
@@ -61,6 +63,7 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
                 (*cmd)[y][p] = input_buffer[i];
                 p++;
                 p_previous = 0;
+                }
             }else{
                 i--;
             }
@@ -73,11 +76,13 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
                 p_previous = 1;
                 //printf("now i found a pipe\n");
                 y++;
-                (*cmd)[y] = malloc(100 + sizeof(char));
+                (*cmd)[y] = malloc(100 * sizeof(char));
+                memset((*cmd)[y],0,sizeof((*cmd)[y]));
                 (*cmd)[y][0] = input_buffer[i];
                 //printf("pipe character is here(Y:%i) --> %s\n",y,(*cmd)[y]);
                 y++;
-                (*cmd)[y] = malloc(100 + sizeof(char));
+                (*cmd)[y] = malloc(100 * sizeof(char));
+                memset((*cmd)[y],0,sizeof((*cmd)[y]));
                 p=0;
             }else{
                 p_previous = 0;
@@ -85,12 +90,19 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
                 p++;
             }
         }
-        //printf("(Y:%i) --> %s\n",y,(*cmd)[y]);
+        printf("(Y:%i) --> [%s]\n",y,(*cmd)[y]);
     }
     //printf("finshed, y is %i\n",y);
     *b = y + 1;//in b passo l'indice dell'ultimo comando piu' uno, per avere in numero totale di comandi
     n = y / 2;
     n++;
+
+    printf(CYAN "<tok_manager:info> this is what I've done\n");
+    for(i=0;i<=y;i++){
+        printf("[i:%i] %s\n", i, (*cmd)[i]);
+    }
+    printf(RESET);
+    fflush(stdout);
     *c = n; // in c passo il numero di comandi effettivi da eseguire
     if(strcmp((*cmd)[0], "") == 0 || strcmp((*cmd)[y], "") == 0){//controlla che il primo o l'ultimo comando non sia un pipe
         fprintf(stderr, RED "incoherent pipe\n");
