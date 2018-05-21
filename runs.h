@@ -92,6 +92,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     int tmp_out;//conterra' temporaneamente l'output del programma(file)
     int tmp_err;//conterra' temporaneamente lo stderr del programma(file)
     int tmp_date;//conterra' temporaneamente la data di esecuzione del programma(file)
+    int tmp_ret;
     int r=0;//conterra' il valore di ritorno della funzione
     size_t wbytes;//conterra' il numero di byte scritti dal programma
     char *cmd_strout, *cmd_strerr, *cmd_strdate, *cmd_str, cmd_strr[10];//conterra' le stringhe restituite dal programma
@@ -107,33 +108,18 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
         remove("/tmp/tmpout.cmd");//rimuove l'output del precedente comando se presente
         remove("/tmp/tmperr.cmd");//rimuove l'output del precedente comando se presente
         remove("/tmp/tmpdate.cmd");//rimuove la date del precedente comando se presente
+        remove("/tmp/tmprrr.cmd");//rimuove la date del precedente comando se presente
         printf(YELLOW "[%i]<solo_run:info> command to run is (%s), cc=%i, numd=%i\n" RESET,getpid(), command, cc, numd);
     }else{
         printf(YELLOW "[%i]<solo_run:info> this is a file: %s\n, cc=%i, numd=%i\n" RESET,getpid(), command, cc, numd);
     }
-        tmp_date=open("/tmp/tmpdate.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente la data del programma
-        tmp_err=open("/tmp/tmperr.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente lo stderr del programma
-        tmp_out=open("/tmp/tmpout.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente lo stdout del programma
+    tmp_date=open("/tmp/tmpdate.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente la data del programma
+    tmp_err=open("/tmp/tmperr.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente lo stderr del programma
+    tmp_out=open("/tmp/tmpout.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente lo stdout del programma
+    tmp_ret=open("/tmp/tmprrr.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato il codice di ritorno
 
 
-    /*int xbytes = lseek(input, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di stdout
-    lseek (input, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
-    printf(CYAN "found %i bytes to read on input\n", xbytes);
-    if(xbytes>0){//se ho letto dei dati vuol dire che il comando ha stampato qualcosa nel suo stdout
-        cmd_strinp = (char *)malloc(xbytes * sizeof(char));//alloco memoria necesseria per contenere il file che contiene lo stdout
-        if(cmd_strinp == NULL){//controlla che il buffer sia stato effettivamente creato
-            fprintf(stderr, "<solo_run:error> failed to create buffer");
-            exit(1);
-        }
-        printf("\n" RESET);
-        if(read(input, cmd_strinp, xbytes)<0){//salvo il contenuto del file nella stringa creata
-            printf("<solo_run:error> there was an error reading the out file\n");
-        }
-        printf(CYAN "THIS IS WHAT I FOUND ON STDIN\n%s\n@@@@@@@@@@@@@@@@@@@@@@\nwbytes=%i\n@@@@@@@@@@@@@@@@@@@@@@\n" RESET, cmd_strinp,xbytes);
-    }
-    lseek (input, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio*/
-
-
+    
     fflush(stdout);
     //* --> eseguo la data su un file temporaneo per poi salvarmele */
     dup2(tmp_date,1);//fa in modo che lo stdout punti al file che conterra' la data di esecuzione
@@ -147,73 +133,117 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
         if ((pid = fork()) == 0){//son
             
             dup2(tmp_out,1);
-            if(strcmp(command,"nano")!=0){
+            if(strcmp(command,"nano")!=0 && strcmp(command,"pico")!=0){
                 dup2(tmp_err,2);
             }
             r=WEXITSTATUS(system(command));fflush(stdout);fflush(stderr);
             close(tmp_err);
+            close(tmp_out);
+            //* --> converto il valore di ritorno in una stringa */
+            sprintf(cmd_strr, "%d", r);
+            write(tmp_ret,cmd_strr,strlen(cmd_strr));
             kill(pppid,SIGUSR1);
             exit(0);
           }else{//father
-            
+            int first_time=1;
             cont=1;
             signal(SIGUSR1, terminate_handler);
             dup2(output,1);
             //printf("waiting for magic to happen\n");fflush(stdout);
             sleep(1.3);
-            while(cont){
-                system("clear");
+            while(cont || first_time){
+                if(!first_time){
+                    system("clear");
+                }else{
+                    first_time=0;
+                }
+
                 wbytes = lseek(tmp_out, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di data
                 lseek (tmp_out, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
-                printf("found %i bytes to read\n",wbytes);
-                cmd_str=(char *)malloc(wbytes * sizeof(char));//alloco lo spazio di memoria necessaria per salvarmi la data in una stringa
-                if(cmd_str == NULL){//controlla che il buffer sia stato effettivamente creato
-                    fprintf(stderr, "<solo_run:error> failed to create buffer\n");
-                    exit(1);
+                //printf("found %i bytes to read\n",wbytes);
+                if((int) wbytes > 0){
+                    cmd_strout=(char *)malloc(wbytes * sizeof(char));//alloco lo spazio di memoria necessaria per salvarmi la data in una stringa
+                    if(cmd_strout == NULL){//controlla che il buffer sia stato effettivamente creato
+                        fprintf(stderr, "<solo_run:error> failed to create buffer\n");
+                        exit(1);
+                    }
+                        if(read(tmp_out, cmd_strout, wbytes)<0){//salvo il contenuto del file nella stringa creata
+                        printf("<solo_run:error> there was an error reading the out file\n");
+                    }
+                    if(strlen(cmd_strout)!=wbytes){
+                        cmd_strout[wbytes] = 00;
+                    }
+                    printf("%s", cmd_strout);//stampo il contenuto della stringa sullo schermo o nel pipe
+                    fflush(stdout);
                 }
-                    if(read(tmp_out, cmd_str, wbytes)<0){//salvo il contenuto del file nella stringa creata
-                    printf("<solo_run:error> there was an error reading the out file\n");
-                }
-                printf("%s", cmd_str);//stampo il contenuto della stringa sullo schermo o nel pipe
-                fflush(stdout);
 
-                
                 wbytes = lseek(tmp_err, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di data
                 lseek (tmp_err, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
-                //printf("[ERR]found %i bytes to read\n",wbytes);
-                if(wbytes!=0){
-                cmd_str=(char *)malloc(wbytes * sizeof(char));//alloco lo spazio di memoria necessaria per salvarmi la data in una stringa
-                if(cmd_str == NULL){//controlla che il buffer sia stato effettivamente creato
-                    fprintf(stderr, "<solo_run:error> failed to create buffer\n");
-                    exit(1);
+                //printf("found %i bytes to read\n",wbytes);
+                if((int) wbytes > 0){
+                    cmd_strerr=(char *)malloc(wbytes * sizeof(char));//alloco lo spazio di memoria necessaria per salvarmi la data in una stringa
+                    if(cmd_strerr == NULL){//controlla che il buffer sia stato effettivamente creato
+                        fprintf(stderr, "<solo_run:error> failed to create buffer\n");
+                        exit(1);
+                    }
+                        if(read(tmp_err, cmd_strerr, wbytes)<0){//salvo il contenuto del file nella stringa creata
+                        printf("<solo_run:error> there was an error reading the out file\n");
+                    }
+                    if(strlen(cmd_strerr)!=wbytes){
+                        cmd_strerr[wbytes] = 00;
+                    }
+                    fprintf(stderr, "%s", cmd_strerr);//stampo il contenuto della string sullo schermo o nel pipe
+                    fflush(stderr);
                 }
-                    if(read(tmp_err, cmd_str, wbytes)<0){//salvo il contenuto del file nella stringa creata
-                    printf("<solo_run:error> there was an error reading the out file\n");
+                if(cont){
+                    sleep(1);
+                    system("clear");
                 }
-                printf("%s", cmd_str);//stampo il contenuto della stringa sullo schermo o nel pipe
-                }
-                fflush(stdout);
-                sleep(1);
             }
             close(tmp_out);
             close(tmp_err);
             fflush(stdout);
+            fflush(stderr);
             wait(&status);
           }
     }else if(cd==1){
         printf(" \n");
     }else if(isGT==1){
-       printf(" \n");
+        dup2(output,1);
+        wbytes = lseek(tmp_out, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di data
+        lseek (tmp_out, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
+        //printf("found %i bytes to read\n",wbytes);
+        if((int) wbytes > 0){
+            cmd_strout=(char *)malloc(wbytes * sizeof(char));//alloco lo spazio di memoria necessaria per salvarmi la data in una stringa
+            if(cmd_strout == NULL){//controlla che il buffer sia stato effettivamente creato
+                fprintf(stderr, "<solo_run:error> failed to create buffer\n");
+                exit(1);
+            }
+                if(read(tmp_out, cmd_strout, wbytes)<0){//salvo il contenuto del file nella stringa creata
+                printf("<solo_run:error> there was an error reading the out file\n");
+            }
+            if(strlen(cmd_strout)!=wbytes){
+                cmd_strout[wbytes] = 00;
+            }
+            printf("%s", cmd_strout);//stampo il contenuto della stringa sullo schermo o nel pipe
+            fflush(stdout);
+        }
     }
     dup2(output,1);//rimette lo stdout dove necessario
     dup2(error,2);//rimette lo stderr dove necessario
 
 
-            tmp_err=open("/tmp/tmperr.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato temporaneamente lo stderr del programma
+    //* --> mi salvo il codice di ritorno in una stringa */
+    wbytes = lseek(tmp_ret, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di data
+    lseek (tmp_ret, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
+    if(read(tmp_ret, cmd_strr, wbytes)<0){//salvo il contenuto del file nella stringa creata
+        printf("<solo_run:error> there was an error reading the out file\n");
+    }
+    if(strlen(cmd_strr)!=wbytes){
+        cmd_strr[wbytes] = 00;
+    }
 
-
-    //* --> converto il valore di ritorno in una stringa */
-    sprintf(cmd_strr, "%d", r);
+    close(tmp_ret);
     //* --> mi salvo la data in una stringa */
     wbytes = lseek(tmp_date, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di data
     lseek (tmp_date, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
@@ -234,36 +264,8 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     //* --> gestisco il risulato dello stdout del comando */
     wbytes = lseek(tmp_out, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di stdout
     lseek (tmp_out, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
-    if(wbytes>0){//se ho letto dei dati vuol dire che il comando ha stampato qualcosa nel suo stdout
-        dup2(standard_out,1);
-        printf(YELLOW "found %i bytes to read on the standard output", wbytes);
-        cmd_strout = (char *)malloc(wbytes * sizeof(char));//alloco memoria necesseria per contenere il file che contiene lo stdout
-        if(cmd_strout == NULL){//controlla che il buffer sia stato effettivamente creato
-            fprintf(stderr, "<solo_run:error> failed to create buffer");
-            exit(1);
-        }
-        if(wbytes>max_len){
-            printf("(exceded max_len, truncating output)");
-            wbytes=max_len;
-        }
-        printf("\n" RESET);
-        if(read(tmp_out, cmd_strout, wbytes)<0){//salvo il contenuto del file nella stringa creata
-            printf("<solo_run:error> there was an error reading the out file\n");
-        }
-        close(tmp_out);//chiudo il file da cui ho fatto la lettura
-        //printf(CYAN "THIS IS WHAT I FOUND ON STDOUT\n%s\n^^^^^^^^^^^^^^^^^^^^^^^\nwbytes=%i\n^^^^^^^^^^^^^^^^^^^^^^^\n" RESET, cmd_strout,wbytes);
-        //* -> fix per l'ultimo carattere */
-        if(strlen(cmd_strout)!=wbytes){
-            printf(RED "suspicious character found at end of string, gonna fix. cmd_strout[%i] = %c\n" RESET, wbytes, cmd_strout[wbytes]);
-            cmd_strout[wbytes] = 00;
-        }
-        fflush(stdout);
-        dup2(output,1);
-
-        printf("%s", cmd_strout);//stampo il contenuto della stringa sullo schermo o nel pipe
-        fflush(stdout);
-        if(strcmp(out_path, "/dev/null") != 0)
-        {
+    if((int)wbytes>0){
+        if(strcmp(out_path, "/dev/null") != 0){
             fd=open(out_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare il log di output
             if(fd<0){
                 printf("<solo_run:info> there was an error accessing the file\n");
@@ -294,42 +296,15 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             write(fd,"----------------------------\n", 30);
             close(fd);
         }
-        free(cmd_strout);
     }
+    //free(cmd_strout);
 
 
 
     //* --> gestisco il risulato dello stderr del comando(allo stesso modo come ho fatto per il stdout) */
     wbytes = lseek(tmp_err, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di stdout
     lseek (tmp_err, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
-    if(wbytes>0){
-        dup2(standard_out,1);
-        printf(YELLOW "found %i bytes to read on the standard error, err_path is : %s\n", wbytes, err_path);
-        cmd_strerr = (char *)malloc(wbytes * sizeof(char));//alloco memoria necesseria per contenere il file che contiene lo stdout
-        if(cmd_strerr == NULL){//controlla che il buffer sia stato effettivamente creato
-            fprintf(stderr, "<solo_run:error> failed to create buffer");
-            exit(1);
-        }
-        if(wbytes>max_len){
-            printf("(exceded max_len, truncating output)");
-            wbytes=max_len;
-        }
-        printf("\n" RESET);
-        if(read(tmp_err, cmd_strerr, wbytes)<0){//salvo il contenuto del file nella stringa creata
-            printf("<solo_run:error> there was an error reading the out file\n");
-        }
-        close(tmp_err);//chiudo il file da cui ho fatto la lettura
-        //printf(CYAN "THIS IS WHAT I FOUND ON STERR\n%s\n^^^^^^^^^^^^^^^^^^^^^^^\nwbytes=%i\n^^^^^^^^^^^^^^^^^^^^^^^\n" RESET, cmd_strerr,wbytes);
-        //* -> fix per l'ultimo carattere */
-        if(strlen(cmd_strerr)!=wbytes){
-            printf(RED "suspicious character found at end of string, gonna fix. cmd_strerr[%i] = %c\n" RESET, wbytes, cmd_strerr[wbytes]);
-            cmd_strerr[wbytes] = 00;
-        }
-        fflush(stdout);
-        dup2(output,1);
-
-        fprintf(stderr, "%s", cmd_strerr);//stampo il contenuto della string sullo schermo o nel pipe
-        //++------++//
+    if((int)wbytes>0){
         if((strcmp(out_path, "/dev/null") != 0)&&(strcmp(err_path, "/dev/null") == 0))
         {
             fd=open(out_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare l'output di errore in append
@@ -385,14 +360,14 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             write(fd,"----------------------------\n", 30);
             close(fd);
         }
-        free(cmd_strerr);
+        //free(cmd_strerr);
     }
-    free(cmd_strdate);
+    //free(cmd_strdate);
     fflush(stdout);
     dup2(standard_inp,0);
     dup2(standard_out,1);
     dup2(standard_err,2);
-    printf(YELLOW "\nreturn value is : %i ", r);
+    printf(YELLOW "\nreturn value is : %s ", cmd_strr);
     printf(RESET "\n");
     fflush(stdout);
 }
