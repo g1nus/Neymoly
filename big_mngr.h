@@ -77,12 +77,12 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
                 //printf("now i found a pipe\n");
                 y++;
                 (*cmd)[y] = malloc(100 * sizeof(char));
-                memset((*cmd)[y],0,sizeof((*cmd)[y]));
+                memset((*cmd)[y],0,strlen((*cmd)[y]));
                 (*cmd)[y][0] = input_buffer[i];
                 //printf("pipe character is here(Y:%i) --> %s\n",y,(*cmd)[y]);
                 y++;
                 (*cmd)[y] = malloc(100 * sizeof(char));
-                memset((*cmd)[y],0,sizeof((*cmd)[y]));
+                memset((*cmd)[y],0,strlen((*cmd)[y]));
                 p=0;
             }else{
                 p_previous = 0;
