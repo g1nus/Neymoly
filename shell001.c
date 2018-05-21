@@ -85,6 +85,9 @@ int main(int argc, char *argv[]){
             }
         }
         sleep(0.2);
+        for(i = 0; i<y;i++){
+            free(cmd[i]);
+        }
     }
     free(input_buffer);
     printf(RESET "BYE!\n");
