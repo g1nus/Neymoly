@@ -43,7 +43,7 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
     int y=0, p_previous=0, p=0, n=0;    //y e' il contatore di comandi effettivi e pipe, p_previous e' un flag che controlla che non ci siano pipe consecutivi senza comandi in mezzo
     char ch;
     (*cmd)[y] = malloc(100 * sizeof(char));
-    memset((*cmd)[y],0,sizeof((*cmd)[y]));
+    memset((*cmd)[y],0,strlen((*cmd)[y]));
     printf(CYAN "<tok_manager:info> charactyyer vector is %i bytes long\n",strlen(input_buffer));
     int i;
     for(i = 0; i < strlen(input_buffer); i++){
