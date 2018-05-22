@@ -50,8 +50,8 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
     //(*cmd)[y] = strdup("");
     //memset((*cmd)[y],0,strlen((*cmd)[y]));
     //(*cmd)[y][0]=00;
-    printf(CYAN "<tok_manager:info> character vector is %i bytes long\n",strlen(input_buffer));
-    printf(CYAN "<tok_manager:info> this is the content of cmd[y]:%s\n",cmd[y]);
+    printf(CYAN "<tok_manager:info> character vector is %i bytes long\n",(int)strlen(input_buffer));
+    //printf(CYAN "<tok_manager:info> this is the content of cmd[y]:%s\n",cmd[y]);
     int i;
     for(i = 0; i < strlen(input_buffer); i++){
         printf("(%i) --> (%c)\n", i, input_buffer[i]);
@@ -84,12 +84,12 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
                 //printf("now i found a pipe\n");
                 y++;
                 (*cmd)[y] = malloc(100 * sizeof(char));
-                memset((*cmd)[y],0,strlen((*cmd)[y]));
+                //memset((*cmd)[y],0,strlen((*cmd)[y]));
                 (*cmd)[y][0] = input_buffer[i];
                 //printf("pipe character is here(Y:%i) --> %s\n",y,(*cmd)[y]);
                 y++;
                 (*cmd)[y] = malloc(100 * sizeof(char));
-                memset((*cmd)[y],0,strlen((*cmd)[y]));
+                //memset((*cmd)[y],0,strlen((*cmd)[y]));
                 p=0;
             }else{
                 p_previous = 0;

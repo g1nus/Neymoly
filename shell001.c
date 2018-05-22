@@ -66,7 +66,7 @@ int main(int argc, char *argv[]){
         snprintf(tmp,buff_size, RESET "[%i]shell:%s> ", getpid(), cwd);
         input_buffer = readline(tmp);        
         if(strlen(input_buffer) == 0){
-            goto gino;//nota di mattia:"So benissimo che si può fare senza facendo un if fatto bene o un continue ma i goto sono belli :) "
+            goto gino;
         }
         add_history(input_buffer);
         if(strlen(input_buffer) == 1){
@@ -86,20 +86,13 @@ int main(int argc, char *argv[]){
         if(strcmp(cmd[0], "quit") != 0){    //se i comandi inseriti non sono un quit provo a eseguirli
           cont++;
             if(y == 1){
-                printf("e: %s\n", err_path);
                 solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err, cont, num_id, 0);
             }else{
                 pipedrun(cmd, y, y, out_path, err_path, max_len, code, NULL, cont, num_id);
             }
         }
         sleep(0.2);
-        printf("\n<main:info> finished executing %i commands\n", y);
-        for(i = 0; i<y;i++){
-            printf("gonna reset %i (%s - %i)",i,cmd[i],strlen(cmd[i]));
-            memset(cmd[i],0,strlen(cmd[i]));
-        }
-        printf("\n<main:info> freed memory\n", y);
-        gino: printf("\n");
+        gino:;
     }
     //free(input_buffer);
     printf(RESET "BYE!\n");
