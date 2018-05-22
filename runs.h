@@ -206,17 +206,17 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
                     system("clear");
                 }
                 t++;//incrementa il numero di letture
-                /*if(t>timeout){
-                    kill(pid,SIGINT);
+                if(t>timeout){
+                    kill(pid,SIGKILL);
                     remove("/tmp/tmpout.cmd");
-                    fflush(stdin);fflush(stdout);fflush(stderr);
+                    //fflush(stdin);fflush(stdout);fflush(stderr);
                     cont=0;
                     dup2(standard_inp,0);
                     dup2(standard_out,1);
                     dup2(standard_err,2);
                     printf("REMOVED PROCESS BECAUSE OF TIMEOUT\n");//stampo il contenuto della stringa sullo schermo o nel pipe
-                    fflush(stdin);fflush(stdout);fflush(stderr);
-                }*/
+                    //fflush(stdin);fflush(stdout);fflush(stderr);
+                }
             }
             close(tmp_out);
             close(tmp_err);
