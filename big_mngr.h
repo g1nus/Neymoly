@@ -98,7 +98,7 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
             }
         }
         (*cmd)[y][p]=00;
-        printf("(Y:%i) --> [%s] - (%i)\n",y,(*cmd)[y], strlen((*cmd)[y]));
+        printf("(Y:%i) --> [%s] - (%i)\n",y,(*cmd)[y], (int)strlen((*cmd)[y]));
     }
     //printf("finshed, y is %i\n",y);
     *b = y + 1;//in b passo l'indice dell'ultimo comando piu' uno, per avere in numero totale di comandi
