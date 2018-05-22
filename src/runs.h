@@ -106,6 +106,9 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     int t=0;//indica il numero delle letture
     int timeout=2;
     int pid, ppid,pppid=getpid(), status;
+    char killer[300];char victim[50];
+    //killer=(char *)malloc(30 * sizeof(char));
+    strcpy(killer, "./last_pid.sh ");
 
     //* --> preparo i file per l'esecuzione dei comandi sul file temporaneo */
     dup2(standard_out, 1);
@@ -153,6 +156,8 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
           }else{//father
             int first_time=1;
             cont=1;
+            sprintf(victim, "%i", pid);
+            
             signal(SIGUSR1, terminate_handler);
             dup2(output,1);
             //printf("waiting for magic to happen\n");fflush(stdout);
@@ -206,17 +211,14 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
                     system("clear");
                 }
                 t++;//incrementa il numero di letture
-                /*if(t>timeout){
-                    kill(pid,SIGINT);
-                    remove("/tmp/tmpout.cmd");
-                    fflush(stdin);fflush(stdout);fflush(stderr);
-                    cont=0;
-                    dup2(standard_inp,0);
-                    dup2(standard_out,1);
-                    dup2(standard_err,2);
-                    printf("REMOVED PROCESS BECAUSE OF TIMEOUT\n");//stampo il contenuto della stringa sullo schermo o nel pipe
-                    fflush(stdin);fflush(stdout);fflush(stderr);
-                }*/
+                if(t>timeout && cont==1){
+
+                    strcpy(killer,klr);
+                    strcat(killer,victim);
+                    system(killer);
+                    sleep(1);
+                    //kill(pid,SIGQUIT);
+                }
             }
             close(tmp_out);
             close(tmp_err);
