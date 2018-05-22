@@ -86,6 +86,7 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
                 (*cmd)[y] = malloc(100 * sizeof(char));
                 //memset((*cmd)[y],0,strlen((*cmd)[y]));
                 (*cmd)[y][0] = input_buffer[i];
+                (*cmd)[y][1]=00;
                 //printf("pipe character is here(Y:%i) --> %s\n",y,(*cmd)[y]);
                 y++;
                 (*cmd)[y] = malloc(100 * sizeof(char));
