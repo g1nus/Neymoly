@@ -65,6 +65,10 @@ int main(int argc, char *argv[]){
         getcwd(cwd, sizeof(cwd));
         snprintf(tmp,buff_size, RESET "[%i]shell:%s> ", getpid(), cwd);
         input_buffer = readline(tmp);        
+        if(strlen(input_buffer) == 0){
+            goto gino;
+        }
+        add_history(input_buffer);
         if(strlen(input_buffer) == 1){
             continue;
         }else{
@@ -95,6 +99,7 @@ int main(int argc, char *argv[]){
             memset(cmd[i],0,strlen(cmd[i]));
         }
         printf("\n<main:info> freed memory\n", y);
+        gino: printf("\n");
     }
     //free(input_buffer);
     printf(RESET "BYE!\n");
