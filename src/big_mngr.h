@@ -2,8 +2,9 @@
 // 0 ==> false | 1 ==> true
 int chk_nmbr(char *str){
     int j;
+    printf(CYAN "gonna check %s\n",str);
     for(j = 0; j < strlen(str); j++){
-        if(!(str[j] >= 48 && str[j] <= 57)){
+        if(!(str[j] >= '0' && str[j] <= '9')){
             return 0;
         }
     }
@@ -122,13 +123,13 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
 
 
 // - controlla e sistema gli argomenti passati al main
-void args_manager(int argc, char *argv[], char **out_path, char **err_path, int *max_len, int *code, char *cwd){
+void args_manager(int argc, char *argv[], char **out_path, char **err_path, int *max_len, int *code, int *timeout, char *cwd){
     printf("the current working directory is : %s\n", cwd);
     char *opt,*content,*c;  //per gli argomenti composti opt conterra' l'opzione e content il contenuto dell'opzione
     opt = (char *)malloc(9 * sizeof(char));
     content =(char *)malloc(50 * sizeof(char));
     //--> controllo se ho un numero ragionevole di argomenti
-    if(argc < 1 || argc > 9){
+    if(argc < 1 || argc > 11){
         fprintf(stderr, RED "incoherent number of arguments\n");
         print_help();
         exit(1);
@@ -142,8 +143,8 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
     if(argc == 2 && (strcmp(argv[1], "-i") == 0 || strcmp(argv[1], "--interactive") == 0)){
         printf("insert the out_path(press enter for default value) : ");
         *out_path = (char *)malloc(50 + 1024 * sizeof(char));   //alloco la memoria necessaria per il buffer
+        *out_path[0]=00;
         fgets(*out_path, 50, stdin);
-        strtok(*out_path, "\n");
         if(strlen(*out_path) == 1){
             *out_path = "/dev/null";
         }else{
@@ -152,6 +153,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
         printf(GREEN "setting path for the output log file to : %s\n", *out_path);
         printf(RESET "insert the err_path(press enter for default value) : ");
         *err_path = (char *)malloc(50 + 1024 * sizeof(char));   //alloco la memoria necessaria per il buffer
+        *err_path[0]=00;
         fgets(*err_path, 50, stdin);
         if(strlen(*err_path) == 1){
             *err_path = "/dev/null";
@@ -178,7 +180,20 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
         }else{
             *max_len = atoi(opt);
         }
+        if(*max_len<=0){
+            *max_len=100000;
+        }
         printf(GREEN "setting max output lenght to : %d\n", *max_len);
+        printf(RESET "insert a timeout(press enter for default value) : ");
+        fgets(opt, 9, stdin);
+        if(strlen(opt) != 1){
+            *timeout = atoi(opt);
+        }
+        if(*timeout<=0){
+            *timeout = -1;
+        }
+        printf(GREEN "setting timeout to : %d\n", *timeout);
+
         fflush(stdout);
         //free(opt);
     }else{
@@ -219,7 +234,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                 printf(GREEN "found maxlen option(-m %s)\n", argv[i+1]);
                 if((i + 1 < argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && strcmp(argv[i+1],"-1") != 0 && chk_nmbr(argv[i+1]) == 1 && *max_len == -1 && chk_ascii(argv[i+1]) == 1){
                     *max_len = atoi(argv[i+1]);
-                    if(*max_len < 0){
+                    if(*max_len <= 0){
                         fprintf(stderr, RED "error while reading maxlen option: value should be greater than 0\n");
                         print_help();
                         exit(1);
@@ -246,6 +261,23 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                     exit(1);
                 }
             }
+            else if(strcmp(argv[i], "-t") == 0){
+                printf(GREEN "found timeout option(-t %s)\n", argv[i+1]);
+                if((i + 1 < argc) && strstr(argv[i+1], "--") == NULL && strstr(argv[i+1], "-") == NULL && strcmp(argv[i+1],"-1") != 0 && chk_nmbr(argv[i+1]) == 1 && *timeout == -1 && chk_ascii(argv[i+1]) == 1){
+                    *timeout = atoi(argv[i+1]);
+                    if(*timeout <= 0){
+                        fprintf(stderr, RED "error while reading timeout option: value should be greater than 0\n");
+                        print_help();
+                        exit(1);
+                    }
+                    i++;
+                }else{
+                    fprintf(stderr, RED "error while reading timeout option\n");
+                    print_help();
+                    exit(1);
+                }
+            }
+
             //--> infine per controllare gli argomenti composti gestisco delle substringhe
             else if(strstr(argv[i], "--outfile=") != NULL){ //se la stringa inizia con '--outfile='
                 printf(GREEN "found output file option, ");
@@ -277,7 +309,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                 printf(GREEN "found maxlen option,");
                 sprintf(content, "%s", argv[i] + 9);
                 printf("content is : %s \n", content);
-                if(chk_nmbr(content) == 1 || *max_len == -1){
+                if(chk_nmbr(content) == 1 && *max_len == -1){
                     *max_len = atoi(content);
                     if(*max_len < 0){
                         fprintf(stderr, RED "error while reading maxlen option: value should be greater than 0\n");
@@ -306,6 +338,24 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
                     exit(1);
                 }
             }
+            else if(strstr(argv[i], "--timeout=") != NULL){
+                printf(GREEN "found maxlen option,");
+                sprintf(content, "%s", argv[i] + 10);
+                printf("content is : %s \n", content);
+                if(chk_nmbr(content) == 1 && *timeout == -1){
+                    *timeout = atoi(content);
+                    if(*timeout <= 0){
+                        fprintf(stderr, RED "error while reading timeout option: value should be greater than 0\n");
+                        print_help();
+                        exit(1);
+                    }
+                }else{
+                    fprintf(stderr, RED "error while reading timeout option\n");
+                    print_help();
+                    exit(1);
+                }
+            }
+
             else{   //se non ho trovato un'opzione valida devo gestire un errore
                 fprintf(stderr, RED "found wrong argument\n");
                 print_help();
