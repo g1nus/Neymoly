@@ -21,8 +21,11 @@
 #define READ 0  // read-side of pipes
 #define WRITE 1 // write-side of pipes
 
+char klr[500];
+
 #include "big_mngr.h"   //includo le procedure necessarie per il controllo e la gestione degli argomenti iniziali e delle stringhe passate come comandi
 #include "runs.h"       //includo le procedure necessarie per eseguire i comandi
+
 
 void kill_handler(int sig){
   //....
@@ -34,6 +37,22 @@ int main(int argc, char *argv[]){
     int max_len = -1, code = -1;    //conterranno i contenuti delle opzioni che verranno usati
     char cwd[1024];
     getcwd(cwd, sizeof(cwd));
+    strcpy(klr,cwd);    
+    if(strcmp(klr+strlen(klr)-4,"/bin")==0){
+        printf("cwd is bin!\n");
+        klr[strlen(klr)-4]=00;
+    }else{
+        printf("cwd is not bin\n");
+    }
+    strcat(klr,"/src/last_pid.sh");
+
+    printf("killer path is : %s\n",klr);
+    if( access( klr, F_OK ) != -1 ) {
+        printf("the path exists!\n");
+    } else {
+        printf("the path does not exist!\n");
+    }
+    strcat(klr," ");
     //--> controllo che gli argomenti passati all'eseguibile siano corretti
     printf(RESET "----------------------------------------\n\n");
     args_manager(argc, argv, &out_path, &err_path, &max_len, &code, cwd);   //args_manager andra' a mettere all'interno delle variabili gli opportuni valori che trova
