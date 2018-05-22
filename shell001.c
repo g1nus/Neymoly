@@ -66,7 +66,7 @@ int main(int argc, char *argv[]){
         snprintf(tmp,buff_size, RESET "[%i]shell:%s> ", getpid(), cwd);
         input_buffer = readline(tmp);        
         if(strlen(input_buffer) == 0){
-            goto gino;
+            goto gino;//nota di mattia:"So benissimo che si può fare senza facendo un if fatto bene o un continue ma i goto sono belli :) "
         }
         add_history(input_buffer);
         if(strlen(input_buffer) == 1){
