@@ -16,6 +16,12 @@ void terminate_handler(){
   cont=0;
 }
 
+/*void k_handler(){
+    system("clear");
+    fflush(stdin);
+    remove("/tmp/tmpout.cmd");
+    exit(0);
+}*/
 
 //metodo che controlla se il comando è cd e se può lo esegue
 int isCD(char *command)
@@ -92,14 +98,13 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     int tmp_out;//conterra' temporaneamente l'output del programma(file)
     int tmp_err;//conterra' temporaneamente lo stderr del programma(file)
     int tmp_date;//conterra' temporaneamente la data di esecuzione del programma(file)
-    int tmp_ret;
+    int tmp_ret;//conterra' il codice di ritorno del programma
     int r=0;//conterra' il valore di ritorno della funzione
     size_t wbytes;//conterra' il numero di byte scritti dal programma
-    char *cmd_strout, *cmd_strerr, *cmd_strdate, *cmd_str, cmd_strr[10];//conterra' le stringhe restituite dal programma
+    char *cmd_strout, *cmd_strerr, *cmd_strdate, cmd_strr[10];//conterra' le stringhe restituite dal programma
     char tmp[12]={0x0};
-
-    char *cmd_strinp;
-
+    int t=0;//indica il numero delle letture
+    int timeout=2;
     int pid, ppid,pppid=getpid(), status;
 
     //* --> preparo i file per l'esecuzione dei comandi sul file temporaneo */
@@ -132,6 +137,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     if(cd!=1 && isGT==0){//se il comando non e' un cd, oppure se e' un cd sbagliato
         if ((pid = fork()) == 0){//son
             
+            //signal(SIGKILL, k_handler);
             dup2(tmp_out,1);
             if(strcmp(command,"nano")!=0 && strcmp(command,"pico")!=0){
                 dup2(tmp_err,2);
@@ -199,6 +205,18 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
                     sleep(1);
                     system("clear");
                 }
+                t++;//incrementa il numero di letture
+                /*if(t>timeout){
+                    kill(pid,SIGINT);
+                    remove("/tmp/tmpout.cmd");
+                    fflush(stdin);fflush(stdout);fflush(stderr);
+                    cont=0;
+                    dup2(standard_inp,0);
+                    dup2(standard_out,1);
+                    dup2(standard_err,2);
+                    printf("REMOVED PROCESS BECAUSE OF TIMEOUT\n");//stampo il contenuto della stringa sullo schermo o nel pipe
+                    fflush(stdin);fflush(stdout);fflush(stderr);
+                }*/
             }
             close(tmp_out);
             close(tmp_err);
@@ -244,6 +262,9 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     }
 
     close(tmp_ret);
+
+
+
     //* --> mi salvo la data in una stringa */
     wbytes = lseek(tmp_date, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di data
     lseek (tmp_date, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
@@ -273,9 +294,9 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             /*-> salvo le informazioni sul file di log */
             write(fd,cmd_strdate,strlen(cmd_strdate));
             if(isGT==0){
-                write(fd," )-> successful execution\n",27);
+                write(fd," )-> command printed on STDOUT\n",32);
             }else{
-                write(fd," )-> file\n", 11);
+                write(fd," )-> FILE content\n", 19);
             }
             write(fd,"ID:",3);
             sprintf(tmp,"%11d", cc);
@@ -284,15 +305,25 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             sprintf(tmp,"%11d", numd);
             write(fd,tmp,sizeof(tmp));
             write(fd,"\n",1);
-            write(fd," -----------\n", 14);
-            write(fd,"executed : ",12);
+            if(isGT==0){
+                write(fd,"launched : ",12);
+            }else{
+                write(fd,"file name : ",13);
+            }
             write(fd,command,strlen(command));
             write(fd,"\n",1);
-            write(fd,cmd_strout,strlen(cmd_strout));
-            write(fd," -----------\n", 14);
-            write(fd,"return code is : ",18);
-            write(fd,cmd_strr,strlen(cmd_strr));
-            write(fd,"\n",2);
+            write(fd,"[ - START OF CONTENT - ]\n", 26);
+            if(t>1){
+                write(fd,"( - Impossibile stampare il contenuto dei comandi bloccanti - )\n", 65);
+            }else{
+                write(fd,cmd_strout,strlen(cmd_strout));
+            }
+            write(fd,"[ - END OF CONTENT - ]\n", 24);
+            if(isGT==0 && code==1){
+                write(fd,"return code is : ",18);
+                write(fd,cmd_strr,strlen(cmd_strr));
+                write(fd,"\n",2);
+            }
             write(fd,"----------------------------\n", 30);
             close(fd);
         }
@@ -311,55 +342,41 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             if(fd<0){
                 printf("<solo_run:error> there was an error accessing the file\n");
             }
-            write(fd,cmd_strdate,strlen(cmd_strdate));
-            write(fd," )-> failed execution\n",23);
-            write(fd,"ID:",3);
-            sprintf(tmp,"%11d", cc);
-            write(fd,tmp,sizeof(tmp));
-            write(fd,".",1);
-            sprintf(tmp,"%11d", numd);
-            write(fd,tmp,sizeof(tmp));
-            write(fd,"\n",1);
-            write(fd," -----------\n", 14);
-            write(fd,"executed : ",12);
-            write(fd,command,strlen(command));
-            write(fd,"\n",1);
-            write(fd,cmd_strerr,strlen(cmd_strerr));
-            write(fd," -----------\n", 14);
-            write(fd,"return code is : ",18);
-            write(fd,cmd_strr,strlen(cmd_strr));
-            write(fd,"\n",2);
-            write(fd,"----------------------------\n", 30);
-            close(fd);
+            
         }
-
         if(strcmp(err_path, "/dev/null") != 0)
         {
             fd=open(err_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare l'output di errore in append
             if(fd<0){
                 printf("<solo_run:error> there was an error accessing the file\n");
             }
-            write(fd,cmd_strdate,strlen(cmd_strdate));
-            write(fd," )-> failed execution\n",23);
-            write(fd,"ID:",3);
-            sprintf(tmp,"%11d", cc);
-            write(fd,tmp,sizeof(tmp));
-            write(fd,".",1);
-            sprintf(tmp,"%11d", numd);
-            write(fd,tmp,sizeof(tmp));
-            write(fd,"\n",1);
-            write(fd," -----------\n", 14);
-            write(fd,"executed : ",12);
-            write(fd,command,strlen(command));
-            write(fd,"\n",1);
+        }
+        write(fd,cmd_strdate,strlen(cmd_strdate));
+        write(fd," )-> command printed on STDERR\n",32);
+        write(fd,"ID:",3);
+        sprintf(tmp,"%11d", cc);
+        write(fd,tmp,sizeof(tmp));
+        write(fd,".",1);
+        sprintf(tmp,"%11d", numd);
+        write(fd,tmp,sizeof(tmp));
+        write(fd,"\n",1);
+        write(fd,"executed : ",12);
+        write(fd,command,strlen(command));
+        write(fd,"\n",1);
+        write(fd,"[ - START OF CONTENT - ]\n", 26);
+        if(t>1){
+            write(fd,"( - Impossibile stampare il contenuto dei comandi bloccanti - )\n", 65);
+        }else{
             write(fd,cmd_strerr,strlen(cmd_strerr));
-            write(fd," -----------\n", 14);
+        }
+        write(fd,"[ - END OF CONTENT - ]\n", 24);
+        if(code==1){
             write(fd,"return code is : ",18);
             write(fd,cmd_strr,strlen(cmd_strr));
             write(fd,"\n",2);
-            write(fd,"----------------------------\n", 30);
-            close(fd);
         }
+        write(fd,"----------------------------\n", 30);
+        close(fd);
         //free(cmd_strerr);
     }
     //free(cmd_strdate);
@@ -367,7 +384,9 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     dup2(standard_inp,0);
     dup2(standard_out,1);
     dup2(standard_err,2);
-    printf(YELLOW "\nreturn value is : %s ", cmd_strr);
+    if(isGT==0 && code==1){
+        printf(YELLOW "\npid of son was %i, return value is : %s ", pid, cmd_strr);
+    }
     printf(RESET "\n");
     fflush(stdout);
 }
@@ -395,15 +414,19 @@ void pipedrun(char *cmd[], int y, int total, char *out_path, char *err_path, int
             if(strcmp(cmd[y-2],"|")==0){
                 printf(MAGENTA "[%i]<pipedrun:info> [FIRST FATHER] There is a pipe before the command\n", getpid());
                 solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], standard_out, standard_err,cc,num,0);//quindi eseguo il comando predendo in fd cio' che mi hanno messo i figli nel pipe e stampo a schermo
+                printf(MAGENTA "[%i]<pipedrun:info> [FINISH:FIRST FATHER] There is a pipe before the command\n", getpid());
             }else if(strcmp(cmd[y-2],">")==0){
                 printf(MAGENTA "[%i]<pipedrun:info> [FIRST FATHER] There is a greater before the command, opening %s\n", getpid(), cmd[y-1]);
-                fd=open(cmd[y-1], O_WRONLY | O_APPEND | O_CREAT, 0777);
+                remove(cmd[y-1]);
+                fd=open(cmd[y-1], O_WRONLY | O_CREAT, 0777);
                 solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], fd, standard_err,cc,num,1);//quindi eseguo il comando predendo in fd cio' che mi hanno messo i figli nel pipe e stampo a schermo
+                printf(MAGENTA "[%i]<pipedrun:info> [FINISH:FIRST FATHER] There is a greater before the command, opening %s\n", getpid(), cmd[y-1]);
             }else{
                 printf(MAGENTA "[%i]<pipedrun:info> [FIRST ATHER] I'm an fd file(%s), I don't have to do nothing(maybe)\n", getpid(), cmd[y-1]);
                 if(y>3 && y==total){
                     printf(MAGENTA "[%i]<pipedrun:info> [FIRST FATHER] I'm the last fd file(%s), I need to print what was done on screen\n", getpid(), cmd[y-1]);
                     solo_run(cmd[y-1], out_path, err_path, max_len, code, standard_inp, standard_out, standard_err,cc,num,1);
+                    printf(MAGENTA "[%i]<pipedrun:info> [FINISH:FIRST FATHER] I'm the last fd file(%s), I need to print what was done on screen\n", getpid(), cmd[y-1]);
                 }
             }
         }else{//altrimenti vuol dire che esiste il pipe temporaneo e sono un "sotto-padre" che deve solo inoltrare ai superiori
@@ -411,14 +434,18 @@ void pipedrun(char *cmd[], int y, int total, char *out_path, char *err_path, int
             if(strcmp(cmd[y-2],"|")==0){
                 printf(MAGENTA "[%i]<pipedrun:info> [FATHER] There is a pipe before the command\n", getpid());
                 solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], tmppipe[WRITE], standard_err,cc,num,0);//quindi leggo dal fd_pipe e mando l'output nel pipe temporaneo
+                printf(MAGENTA "[%i]<pipedrun:info> [FINISH:FATHER] There is a pipe before the command\n", getpid());
             }else if(strcmp(cmd[y-2],">")==0){
                 printf(MAGENTA "[%i]<pipedrun:info> [FATHER] There is a greater before the command, opening %s\n", getpid(), cmd[y-1]);
-                fd=open(cmd[y-1], O_WRONLY | O_APPEND | O_CREAT, 0777);
+                remove(cmd[y-1]);
+                fd=open(cmd[y-1], O_WRONLY | O_CREAT, 0777);
                 solo_run(cmd[y-1], out_path, err_path, max_len, code, fd_pipe[READ], fd, standard_err,cc,num,1);
+                printf(MAGENTA "[%i]<pipedrun:info> [FINISH:FATHER] There is a greater before the command, opening %s\n", getpid(), cmd[y-1]);
             }else{
                 //...scorrere fino al prossimo comando e passargli fd_pipe[READ]
                 printf(MAGENTA "[%i]<pipedrun:info> [FATHER] I'm an fd file(%s), I need to forward to the next command\n", getpid(), cmd[y-1]);
                 solo_run(cmd[y-1], out_path, err_path, max_len, code, standard_inp, tmppipe[WRITE], standard_err,cc,num,1);
+                printf(MAGENTA "[%i]<pipedrun:info> [FINISH:FATHER] I'm an fd file(%s), I need to forward to the next command\n", getpid(), cmd[y-1]);
             }
         }
         close(fd_pipe[READ]);//quando ho finito chiudo il pipe
@@ -429,6 +456,7 @@ void pipedrun(char *cmd[], int y, int total, char *out_path, char *err_path, int
             if(strcmp(cmd[1],"|")==0 || strcmp(cmd[1],">")==0){
                 printf(MAGENTA "[%i]<pipedrun:info> [LAST SON] Found pipe or output file\n", getpid());
                 solo_run(cmd[0], out_path, err_path, max_len, code, standard_inp, fd_pipe[WRITE], standard_err,cc,1,0);//eseguo il comando prendendo lo standard fd e passandolo nel fd_pipe
+                printf(MAGENTA "[%i]<pipedrun:info> [FINISH:LAST SON] Found pipe or output file\n", getpid());
             }else if(strcmp(cmd[1],"<")==0){
                 printf("[%i]<piperun:info> [LAST SON] Found an fd file\n", getpid());
                 fd=open(cmd[2], O_RDONLY, 0777);
@@ -442,12 +470,15 @@ void pipedrun(char *cmd[], int y, int total, char *out_path, char *err_path, int
                         solo_run(cmd[0], out_path, err_path, max_len, code, fd, fd_pipe[WRITE], standard_err,cc,1,0);//eseguo il comando prendendo lo standard fd e passandolo nel fd_pipe
                     }
                 }
+                printf("[%i]<piperun:info> [FINISH:LAST SON] Found an fd file\n", getpid());
             }
         }else{//altrimenti vuol dire che sono un comando intermedio
             printf(MAGENTA "[%i]<pipedrun:info> [SON] y is %i gonna call myself\n", getpid(),y);
             pipedrun(cmd, y-2, total, out_path, err_path, max_len, code, fd_pipe,cc,--num);//quindi richiamo la pipedrun passando pero' il pipe
+            printf(MAGENTA "[%i]<pipedrun:info> [FINISH:SON] y is %i gonna call myself\n", getpid(),y);
         }
         close(fd_pipe[WRITE]);
         exit(0);
     }
+    printf(MAGENTA "[%i]<pipedrun:info>I'm a piped run, y is %i and I've finished \n", getpid(), y);
 }

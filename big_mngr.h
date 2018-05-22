@@ -55,8 +55,8 @@ void tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
             }
             //printf("cmd[y] is %s, input_buffer[i] is %c\n",(*cmd)[y], input_buffer[i]);
             if(input_buffer[i] != '|' && input_buffer[i] != '>' && input_buffer[i] != '<'){
-                if(i<strlen(input_buffer)-1){
-                if(p != 0){
+                if( i<strlen(input_buffer)){
+                if(p>0){
                     (*cmd)[y][p] = ' ';
                     p++;
                 }
@@ -171,7 +171,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
         }
         printf(GREEN "setting max output lenght to : %d\n", *max_len);
         fflush(stdout);
-        free(opt);
+        //free(opt);
     }else{
         int i;
         for(i = 1; i < argc; i++){
@@ -304,7 +304,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
             }
         }
     }
-    free(content);
+    //free(content);
     //--> controllo se c'e' qualche opzione non ancora inizializzata(sarebbe possibile fare anche un inserimento interrattivo)
     if(*out_path == NULL){
         printf(YELLOW "\nsetting default outputfile path\n");
