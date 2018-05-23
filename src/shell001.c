@@ -35,9 +35,10 @@ int main(int argc, char *argv[]){
     setstd();   //setta i file descriptor standard
     char *err_path, *out_path; err_path = NULL; out_path = NULL;
     int max_len = -1, code = -1, timeout = -1;    //conterranno i contenuti delle opzioni che verranno usati
+    int valid=0;
     char cwd[1024];
     getcwd(cwd, sizeof(cwd));
-    strcpy(klr,cwd);    
+    strcpy(klr,cwd);
     if(strcmp(klr+strlen(klr)-4,"/bin")==0){
         printf("cwd is bin!\n");
         klr[strlen(klr)-4]=00;
@@ -94,19 +95,21 @@ int main(int argc, char *argv[]){
         }
         //printf(BLUE "\n<main:info> string: %s - n_char : %i \n", input_buffer, strlen(input_buffer));
         //--> divisione della stringa in tokens
-        tok_manager(input_buffer, &cmd, &y, &num_id);//dentro arr mi trovero le diverse stringhe passare in input e in cmd i comandi passati
+        valid=tok_manager(input_buffer, &cmd, &y, &num_id);//dentro arr mi trovero le diverse stringhe passare in input e in cmd i comandi passati
         printf("\n<main:info> total commands received : %i --> ", y);
         int i;
         for(i = 0; i < y; i++){
             printf("(%s) ", cmd[i]);
         }
         printf("\n");
-        if(strcmp(cmd[0], "quit") != 0){    //se i comandi inseriti non sono un quit provo a eseguirli
-          cont++;
-            if(y == 1){
-                solo_run(cmd[0], out_path, err_path, max_len, code, timeout, standard_inp, standard_out, standard_err, cont, num_id, 0);
-            }else{
-                pipedrun(cmd, y, y, out_path, err_path, max_len, code, timeout, NULL, cont, num_id);
+        if(valid==1){
+            if(strcmp(cmd[0], "quit") != 0){    //se i comandi inseriti non sono un quit provo a eseguirli
+              cont++;
+                if(y == 1){
+                    solo_run(cmd[0], out_path, err_path, max_len, code, timeout, standard_inp, standard_out, standard_err, cont, num_id, 0);
+                }else{
+                    pipedrun(cmd, y, y, out_path, err_path, max_len, code, timeout, NULL, cont, num_id);
+                }
             }
         }
         sleep(0.2);
