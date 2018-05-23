@@ -1,17 +1,5 @@
 int cont=1;
 
-int standard_inp;
-int standard_out;
-int standard_err;
-
-void setstd(){
-    standard_inp = dup(0);//mi salvo lo stdin(tastiera)
-    standard_out = dup(1);//mi salvo lo stdout(video)
-    standard_err = dup(2);//mi salvo lo stderr(video)
-    //standard_err = open("/tmp/doyourjob");//mi salvo lo stderr(video)
-
-}
-
 void terminate_handler(){
   cont=0;
 }
@@ -127,7 +115,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     tmp_ret=open("/tmp/tmprrr.cmd", O_RDWR | O_CREAT, 0777);//apro il file in cui verra' salvato il codice di ritorno
 
 
-    
+
     fflush(stdout);
     //* --> eseguo la data su un file temporaneo per poi salvarmele */
     dup2(tmp_date,1);//fa in modo che lo stdout punti al file che conterra' la data di esecuzione
@@ -139,7 +127,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     dup2(input, 0);//fa in modo che l'fd derivi da tastiera o dal pipe passato
     if(cd!=1 && isGT==0){//se il comando non e' un cd, oppure se e' un cd sbagliato
         if ((pid = fork()) == 0){//son
-            
+
             //signal(SIGKILL, k_handler);
             dup2(tmp_out,1);
             if(strcmp(command,"nano")!=0 && strcmp(command,"pico")!=0){
@@ -157,7 +145,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             int first_time=1;
             cont=1;
             sprintf(victim, "%i", pid);
-            
+
             signal(SIGUSR1, terminate_handler);
             dup2(output,1);
             //printf("waiting for magic to happen\n");fflush(stdout);
@@ -338,13 +326,13 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     wbytes = lseek(tmp_err, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di stdout
     lseek (tmp_err, (off_t) 0, SEEK_SET);//riporto il puntatore all'inizio
     if((int)wbytes>0){
-        if((strcmp(out_path, "/dev/null") != 0)&&(strcmp(err_path, "/dev/null") == 0))
+        if(strcmp(err_path, "/dev/null") == 0)
         {
             fd=open(out_path, O_WRONLY | O_APPEND | O_CREAT, 0777);//apro il file in cui devo salvare l'output di errore in append
             if(fd<0){
                 printf("<solo_run:error> there was an error accessing the file\n");
             }
-            
+
         }
         if(strcmp(err_path, "/dev/null") != 0)
         {
