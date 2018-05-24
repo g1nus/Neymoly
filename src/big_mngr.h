@@ -50,11 +50,11 @@ void print_help(){
 
 int tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
     // -> organizza la stringa passata input in comandi suddivisi dai caratteri '|','<' o '>', ritorna 0 se la stringa non e' valida
-    if(chk_ascii(input_buffer)==0){//controllo che i caratteri siano ASCII standard
+    if(chk_ascii(input_buffer) == 0){//controllo che i caratteri siano ASCII standard
         fprintf(stderr, RED "invalid standard ASCII characters found\n");
         return 0;
     }
-    int y=0, p_previous=0, p=0;    //y conta in quanti pezzi ho suddiviso la stringa, p_previous e' un flag che controlla che non ci siano pipe consecutivi senza comandi in mezzo, p e' l'indice al prossimo carattere da inserire nella stringa
+    int y = 0, p_previous = 0, p = 0;//y conta in quanti pezzi ho suddiviso la stringa, p_previous e' un flag che controlla che non ci siano pipe consecutivi senza comandi in mezzo, p e' l'indice al prossimo carattere da inserire nella stringa
     (*cmd)[y] = malloc(100 * sizeof(char));//alloco memoria necessaria per il primo comando
     int i;
     for(i = 0; i < strlen(input_buffer); i++){//percorro tutti i caratteri della stringa in input
