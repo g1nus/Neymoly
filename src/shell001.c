@@ -55,6 +55,9 @@ int main(int argc, char *argv[]){
     printf(RESET "\nRECEIVED PARAMETERS----------------------------------------\n");
     printf(BLUE "out : %s - err : %s - max : %i - code : %i - timeout : %i", out_path, err_path, max_len, code, timeout);//vengono stampati a video i parametri ottenuti dall'args_manager
     printf(RESET "\n-----------------------------------------------------------\n");
+    if(timeout < 0){
+        printf(RED "WARNING! Time out isn't set, this might cause some problems\n");
+    }
     remove(out_path);//vegono rimossi i file appena specificati nel caso in cui fossera gia' presenti
     remove(err_path);
     /*si inizializzano le variabili necessarie per far andare la custom shell*/
@@ -79,7 +82,7 @@ int main(int argc, char *argv[]){
             goto gino;
         }
         add_history(input_buffer);
-        valid=tok_manager(input_buffer, &cmd, &y, &num_id);//suddivide la stringa presa in input in un vettore di stringhe contenente i comandi e i pipe, inoltre ritorna 0 se la stringa contiene un piping incoerente
+        valid=tok_manager(input_buffer, &cmd, &y, &num_id, out_path, err_path);//suddivide la stringa presa in input in un vettore di stringhe contenente i comandi e i pipe, inoltre ritorna 0 se la stringa contiene un piping incoerente
         printf("\n");
         if(valid==1){//se i comandi passati risultano validi chiama le opportune funzioni
             if(strcmp(cmd[0], "quit") != 0){//se i comandi inseriti non sono un quit prova a eseguirli
