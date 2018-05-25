@@ -341,7 +341,7 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
             }
         }
     }
-    free(content);//dealloco memoria
+    //free(content);//dealloco memoria
     /*controllo se c'e' qualche opzione non ancora inizializzata e quindi setto dei parametri di default se necessario*/
     if(*out_path == NULL){
         printf(YELLOW "setting default outputfile path\n\n");
