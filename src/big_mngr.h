@@ -48,7 +48,7 @@ void print_help(){
 }
 
 
-int tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
+int tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c, char *out_path, char *err_path){
     // -> organizza la stringa passata input in comandi suddivisi dai caratteri '|','<' o '>', ritorna 0 se la stringa non e' valida
     if(chk_ascii(input_buffer) == 0){//controllo che i caratteri siano ASCII standard
         fprintf(stderr, RED "invalid standard ASCII characters found\n");
@@ -103,10 +103,53 @@ int tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c){
         fprintf(stderr, RED "incoherent string of commands\n");
         return 0;
     }
+    /*controllo i possibili accessi ai file*/
+    char cwd[100]; char a_path[150];
+    getcwd(cwd, sizeof(cwd));//mi salvo la working directory
+    strcat(cwd, "/");
+    for(i = 2; i <= y; i += 2){//controllo se i file in input esistono e se si tenta l'accesso ai file di log
+        if(strcmp((*cmd)[i-1], "<") == 0){//prima controllo se il file a cui si tenta di accedere in input esiste
+            if(access((*cmd)[i], F_OK) == -1){
+                fprintf(stderr, RED "warning, you specified a file that doesn't exist\n");
+                return 0;
+            }
+        }
+        if(strcmp((*cmd)[i-1], "<") == 0 || strcmp((*cmd)[i-1], ">") == 0){//controllo anche poi se si tenta di accedere ai file di log
+            if((*cmd)[i][0] != '/'){
+                strcpy(a_path, cwd);
+                strcat(a_path,(*cmd)[i]);
+            }else{
+                strcpy(a_path, (*cmd)[i]);
+            }
+            if(strcmp(a_path, out_path) == 0 || strcmp(a_path, err_path) == 0 || strcmp(a_path, "/dev/null") == 0){
+                fprintf(stderr, RED "warning, you can't access log files during execution or /dev/null\n");
+                return 0;
+            }
+        }
+    }
+    /*controllo l'ordine dei redirezionamenti e pipe ( < | > )*/
+    int pi=0,lt=0,gt=0;
+    for(int i = 1; i <= y; i += 2){
+        if(strcmp((*cmd)[i], "<") == 0){
+            lt++;
+            if(pi!=0 || gt !=0){
+                fprintf(stderr, RED "incoherent string of commands\n");
+                return 0;
+            }
+        }
+        if(strcmp((*cmd)[i], "|") == 0){
+            pi++; 
+            if(gt !=0){
+                fprintf(stderr, RED "incoherent string of commands\n");
+                return 0;
+           }
+        }
+        if(strcmp((*cmd)[i], ">") == 0){
+            gt++; 
+        }
+    }
     return 1;
 }
-
-
 
 void args_manager(int argc, char *argv[], char **out_path, char **err_path, int *max_len, int *code, int *timeout, char *cwd){
     // - controlla e sistema gli argomenti passati al main
@@ -358,6 +401,9 @@ void args_manager(int argc, char *argv[], char **out_path, char **err_path, int 
     if(*max_len == -1){
         printf(YELLOW "setting default max length\n\n");
         *max_len = 100000;
+    }
+    if(*timeout == -1){
+        printf(YELLOW "setting default timeout(-1)\n\n");
     }
     /*mi occupo di convertire i path relativi in assoluti se necessario*/
     char tmp[1024];
