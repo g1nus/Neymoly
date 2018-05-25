@@ -115,6 +115,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             /*padre che si occupera' di leggere cosa scrive il filgio nel file temporaneo e di inoltrarlo ai canali di output ed errore*/
             signal(SIGUSR1, terminate_handler);//assegno al segnale l'esecuzione delle funzione terminate_handler
             int first_time = 1;//inzialmente setto first_time a 1 per specificare che sot facendo la prima lettura
+            int x = 0;//flag che mi indica se ho superato la max_len
             going=1;//going a 1 vuol dire che il figlio sta teoricamente eseguendo
             sprintf(victim, "%i", pid);//trasformo il pid del figlio in uns stringa
             dup2(output, 1);//setto l'output dove necessario
@@ -124,11 +125,16 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
                     first_time=0;
                 }
                 /*controllo l'output del figlio e lo stampo dove necessario*/
+                x = 0;
                 wbytes = lseek(tmp_out, (size_t)0, SEEK_END);//mi salvo il numero di byte contenuti nel file di output del figlio
                 lseek(tmp_out, (off_t)0, SEEK_SET);//riporto il puntatore all'inizio
                 //(might be useful) printf("found %i bytes to read\n",wbytes);
+                if(wbytes > max_len){//controllo se ho superato max_len
+                    wbytes = max_len;
+                    x = 1;//notifico che ho dovuto troncare l'output
+                }
                 if((int)wbytes > 0){//se ho trovato dei bytes da leggere nel file di output
-                    cmd_strout=(char *)malloc(wbytes * sizeof(char));//alloco lo spazio di memoria necessario
+                    cmd_strout=(char *)malloc((wbytes + 1) * sizeof(char));//alloco lo spazio di memoria necessario
                     if(cmd_strout == NULL){//controlla che il buffer sia stato effettivamente creato
                         fprintf(stderr, "<solo_run:error> failed to create buffer\n");
                         exit(1);
@@ -140,15 +146,23 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
                     if(strlen(cmd_strout) != wbytes){//fix per caratteri di fine stringa
                         cmd_strout[wbytes] = 00;
                     }
+                    if(x == 1 && cmd_strout[strlen(cmd_strout)-1] != '\n'){//aggiungo un carattere di invio se la stringa e' stata troncata
+                        strcat(cmd_strout,"\n");
+                    }
                     printf("%s", cmd_strout);//stampo il contenuto della stringa sullo schermo o nel pipe
                     fflush(stdout);
                 }
                 /*controllo lo stderr del figlio e lo stampo sempre a video stavolta*/
+                x = 0;
                 wbytes = lseek(tmp_err, (size_t)0, SEEK_END);
                 lseek(tmp_err, (off_t)0, SEEK_SET);
                 //(might be useful) printf("found %i bytes to read\n",wbytes);
+                if(wbytes > max_len){//controllo se ho superato max_len
+                    wbytes = max_len;
+                    x = 1;//notifico che ho dovuto troncare l'output
+                }
                 if((int)wbytes > 0){
-                    cmd_strerr=(char *)malloc(wbytes * sizeof(char));
+                    cmd_strerr=(char *)malloc((wbytes + 1) * sizeof(char));
                     if(cmd_strerr == NULL){
                         fprintf(stderr, "<solo_run:error> failed to create buffer\n");
                         exit(1);
@@ -159,6 +173,9 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
                     }
                     if(strlen(cmd_strerr) != wbytes){//fix per l'ultimo carattere
                         cmd_strerr[wbytes] = 00;
+                    }
+                    if(x == 1 && cmd_strerr[strlen(cmd_strerr)-1] != '\n'){//aggiungo un carattere di invio se la stringa e' stata troncata
+                        strcat(cmd_strerr,"\n");
                     }
                     fprintf(stderr, "%s", cmd_strerr);//stampo il contenuto della stringa sullo schermo
                     fflush(stderr);
