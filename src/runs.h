@@ -62,7 +62,6 @@ int isCD(char *command){
 
 void solo_run(char *command, char *out_path, char *err_path, int max_len, int code, int timeout, int input, int output, int error, int cc, int numd, int isGT){
     // -> solo_run si occupa di eseguire i comandi, gli vengono passati: comando, path per il log di output, path per il log di errore, lughezza massima dell'output, flag per il codice di ritorno, il tempo di timeout, canali di input, output ed errore, ID del comando, ID del sottocomando e flag controllo per la gestione dei file
-    printf(YELLOW "[%i] command: %s\n" RESET, getpid(), command);
     int cd = isCD(command);//prima di tutto controllo se si tratta di un "cd" e se necessario cambio la working directory
 
     /*dichiaro i file descriptors necessari*/
