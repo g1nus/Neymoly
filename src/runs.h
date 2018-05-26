@@ -64,6 +64,8 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     // -> solo_run si occupa di eseguire i comandi, gli vengono passati: comando, path per il log di output, path per il log di errore, lughezza massima dell'output, flag per il codice di ritorno, il tempo di timeout, canali di input, output ed errore, ID del comando, ID del sottocomando e flag controllo per la gestione dei file
     int cd = isCD(command);//prima di tutto controllo se si tratta di un "cd" e se necessario cambio la working directory
 
+    printf("[%i]cmd: %s\n", getpid(), command);
+
     /*dichiaro i file descriptors necessari*/
     int fd;//conterra' il file descriptor per il file di log e output
     int tmp_out;//conterra' temporaneamente l'output del programma(file)
@@ -219,6 +221,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             printf("%s", cmd_strout);//stampo il contenuto della stringa sullo schermo o nel pipe
             fflush(stdout);
         }
+        printf("[%i]cmd: %s - finished reading from tmpout\n", getpid(), command);
     }
 
     /*ora mi cerco il codice di ritorno che il comando eseguito ha salvato nel file tmp_ret*/
@@ -310,23 +313,31 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             }
         }
         write(fd, cmd_strdate, strlen(cmd_strdate));
-        write(fd, " )-> command printed on STDERR\n", 32);
-        write(fd, "ID:", 3);
+        if(isGT == 0){//controllo se si tratta di un comando o di un file e stampo cio' che e' necessario
+            write(fd, " )-> command printed on STDERR\n", 32);
+        }else{
+            write(fd, " )-> FILE content\n", 19);
+        }
+        write(fd, "ID:", 4);
         sprintf(tmp, "%11d", cc);
         write(fd, tmp, sizeof(tmp));
         write(fd, ".", 1);
         sprintf(tmp, "%11d", numd);
         write(fd, tmp, sizeof(tmp));
         write(fd, "\n", 2);
-        write(fd, "executed : ", 12);
+        if(isGT == 0){
+            write(fd, "executed : ", 12);
+        }else{
+            write(fd, "file name : ", 13);
+        }
         write(fd, command, strlen(command));
         write(fd, "\n", 1);
         write(fd, "[ - START OF CONTENT - ]\n", 26);
         if(t > 1){
             write(fd, "( - Impossibile stampare il contenuto dei comandi bloccanti - )\n", 65);
-        }else{
+        }else if(isGT==0){
             write(fd, cmd_strerr, strlen(cmd_strerr));
-        }
+        }//se isGT=1 vuol dire che ho cercato di stampare un errore in un file, ma non posso stampare lo stderr in un file
         write(fd, "[ - END OF CONTENT - ]\n", 24);
         if(code == 1){
             write(fd, "return code is : ", 18);
@@ -344,8 +355,9 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     dup2(standard_out, 1);
     dup2(standard_err, 2);
     if(isGT == 0 && code == 1){
-        printf(YELLOW "\npid of son was %i, return value is : %s\n" RESET, pid, cmd_strr);
+        printf(CYAN "\npid of son was %i, return value is : %s\n" RESET, pid, cmd_strr);
     }
+    printf("[%i]finished(%s)\n", getpid(), command);
     fflush(stdout);
 }
 
