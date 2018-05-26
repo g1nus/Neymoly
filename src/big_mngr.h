@@ -41,8 +41,8 @@ void print_help(){
     printf("\t to set the output file    : --outfile=\"<path>\" or -o <path>\n");
     printf("\t to set the error file     : --errfile=\"<path>\" or -e <path>\n");
     printf("\t to set the code flag      : --code=\"true\" or -c true or --code=\"false\" or -c false \n");
-    printf("\t to set the max lenght     : --maxlength=\"<unsingned int>\" or -m <unsingne int>\n");
-    printf("\t to set a timeout          : --timeout=\"<unsigned int>\" or -t <unsingned int>\n");
+    printf("\t to set the max lenght     : --maxlength=\"<int>\" or -m <int>\n");
+    printf("\t to set a timeout          : --timeout=\"<int>\" or -t <int>\n");
     printf("\t to start interactive mode : --intercative or -i\n\n");
     printf("----------------------------------------\n");
 }
