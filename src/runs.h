@@ -64,7 +64,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     // -> solo_run si occupa di eseguire i comandi, gli vengono passati: comando, path per il log di output, path per il log di errore, lughezza massima dell'output, flag per il codice di ritorno, il tempo di timeout, canali di input, output ed errore, ID del comando, ID del sottocomando e flag controllo per la gestione dei file
     int cd = isCD(command);//prima di tutto controllo se si tratta di un "cd" e se necessario cambio la working directory
 
-    printf("[%i]cmd: %s\n", getpid(), command);
+    //(might be useful)printf("[%i]cmd: %s\n", getpid(), command);
 
     /*dichiaro i file descriptors necessari*/
     int fd;//conterra' il file descriptor per il file di log e output
@@ -221,7 +221,6 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
             printf("%s", cmd_strout);//stampo il contenuto della stringa sullo schermo o nel pipe
             fflush(stdout);
         }
-        printf("[%i]cmd: %s - finished reading from tmpout\n", getpid(), command);
     }
 
     /*ora mi cerco il codice di ritorno che il comando eseguito ha salvato nel file tmp_ret*/
@@ -357,7 +356,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     if(isGT == 0 && code == 1){
         printf(CYAN "\npid of son was %i, return value is : %s\n" RESET, pid, cmd_strr);
     }
-    printf("[%i]finished(%s)\n", getpid(), command);
+    //(might be useful)printf("[%i]finished(%s)\n", getpid(), command);
     fflush(stdout);
 }
 
