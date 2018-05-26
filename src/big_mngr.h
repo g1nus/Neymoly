@@ -129,7 +129,7 @@ int tok_manager(char *input_buffer, char *(*cmd)[10], int *b,int *c, char *out_p
     }
     /*controllo l'ordine dei redirezionamenti e pipe ( < | > )*/
     int pi=0,lt=0,gt=0;
-    for(int i = 1; i <= y; i += 2){
+    for(i = 1; i <= y; i += 2){
         if(strcmp((*cmd)[i], "<") == 0){
             lt++;
             if(pi!=0 || gt !=0){
