@@ -354,7 +354,7 @@ void solo_run(char *command, char *out_path, char *err_path, int max_len, int co
     dup2(standard_out, 1);
     dup2(standard_err, 2);
     if(isGT == 0 && code == 1){
-        printf(CYAN "\npid of son was %i, return value is : %s\n" RESET, pid, cmd_strr);
+        printf(CYAN "[%i]CMD: %s - return value: %s\n" RESET, pid, command, cmd_strr);
     }
     //(might be useful)printf("[%i]finished(%s)\n", getpid(), command);
     fflush(stdout);
