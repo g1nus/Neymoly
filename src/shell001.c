@@ -92,6 +92,7 @@ int main(int argc, char *argv[]){
                 }else{//altrimenti vuol dire che ci sono dei pipe e quindi richiama la piped_run
                     piped_run(cmd, y, y, out_path, err_path, max_len, code, timeout, NULL, cont, num_id);
                 }
+                printf(RESET "\n");
             }
         }
         gino:;
