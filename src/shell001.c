@@ -79,7 +79,7 @@ int main(int argc, char *argv[]){
         snprintf(cl_output,100, RESET "[%i]shell:%s> ", getpid(), cwd);//salva in cl_output l'output che da la line di comando
         input_buffer = readline(cl_output);//aspetta in input una stringa
         if(strlen(input_buffer) == 0){//se non viene passato niente in input salta alla prossima iterazione
-            goto gino;
+            continue;
         }
         add_history(input_buffer);
         valid=tok_manager(input_buffer, &cmd, &y, &num_id, out_path, err_path);//suddivide la stringa presa in input in un vettore di stringhe contenente i comandi e i pipe, inoltre ritorna 0 se la stringa contiene un piping incoerente
@@ -95,7 +95,6 @@ int main(int argc, char *argv[]){
                 printf(RESET "\n");
             }
         }
-        gino:;
     }
     printf(RESET "BYE!\n");
     return 0;
