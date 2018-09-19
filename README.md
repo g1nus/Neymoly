@@ -6,5 +6,4 @@ progetto sistemi operativi
  * ./a.out --outfile="/chrt/ff.txt" -e /dsds/sas -c true
 ### provare poi nella shell a lanciare comandi come:
  * ls | more
- 
- attualmente è solo in grado di leggere in maniera decente gli argomenti e i comandi, non fa nessun controllo particolare per gestire errori
+
